@@ -1,0 +1,312 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>ui-morph</title>
+<style>
+@font-face { font-family: Geist; src: url(fonts/Geist-Variable.woff2) format("woff2"); font-weight: 100 900; }
+html, body { margin: 0; width: 1920px; height: 1080px; overflow: hidden; background: #ECEAE6; font-family: Geist, sans-serif; -webkit-font-smoothing: antialiased; }
+#stage { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; transform-origin: 960px 540px; }
+#shape { position: absolute; overflow: hidden; transform-origin: 50% 50%; }
+.layer { position: absolute; left: 0; top: 0; color: #fff; }
+.abs { position: absolute; }
+.row { display: flex; align-items: center; }
+svg { display: block; overflow: visible; }
+#cursor { position: absolute; left: 0; top: 0; width: 34px; height: 34px; transform-origin: 4px 3px; }
+</style>
+
+<div id="stage">
+  <div id="shape">
+    <!-- 01 button -->
+    <div class="layer row" id="L_button" style="justify-content:center;font-size:26px;font-weight:560;letter-spacing:-0.01em">Get started</div>
+    <!-- 02 loader -->
+    <div class="layer" id="L_loader"><svg width="72" height="72"><circle id="arc" cx="36" cy="36" r="16" fill="none" stroke="#fff" stroke-width="4.5" stroke-linecap="round"/></svg></div>
+    <!-- 03 check -->
+    <div class="layer" id="L_check"><svg width="72" height="72"><path id="tick" d="M25 37 l8 8 l15 -17" fill="none" stroke="#fff" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round" pathLength="1"/></svg></div>
+    <!-- 04 dynamic island -->
+    <div class="layer row" id="L_island" style="justify-content:space-between;padding:0 22px;box-sizing:border-box;font-size:20px;font-weight:520">
+      <span class="row" style="gap:12px"><span style="width:28px;height:28px;border-radius:8px;background:#fff"></span>Now playing</span>
+      <span class="row" style="gap:4px;height:28px" id="wave"><i></i><i></i><i></i><i></i></span>
+    </div>
+    <!-- 05 music player -->
+    <div class="layer" id="L_player">
+      <div class="abs" style="left:28px;top:28px;width:120px;height:120px;border-radius:20px;background:#fff">
+        <div class="abs" style="left:38px;top:38px;width:44px;height:44px;border-radius:50%;border:2.5px solid #0A0A0A;box-sizing:border-box"></div>
+      </div>
+      <div class="abs" style="left:172px;top:46px;font-size:30px;font-weight:600;letter-spacing:-0.015em">Morning Loop</div>
+      <div class="abs" style="left:172px;top:88px;font-size:22px;color:#8A8A8A">Synth Ensemble</div>
+      <svg class="abs" style="left:436px;top:70px" width="32" height="36"><path id="pp1" fill="#fff"/><path id="pp2" fill="#fff"/></svg>
+      <div class="abs" style="left:28px;top:172px;width:464px;height:8px;border-radius:4px;background:#333"></div>
+      <div class="abs" id="pfill" style="left:28px;top:172px;height:8px;border-radius:4px;background:#fff"></div>
+      <div class="abs" id="pknob" style="top:165px;width:22px;height:22px;border-radius:50%;background:#fff"></div>
+      <div class="abs" id="ptime" style="left:28px;top:196px;font-size:17px;color:#8A8A8A;font-variant-numeric:tabular-nums">1:12</div>
+      <div class="abs" style="right:28px;top:196px;font-size:17px;color:#8A8A8A;font-variant-numeric:tabular-nums">2:48</div>
+    </div>
+    <!-- 06 volume slider (the shape itself is the track) -->
+    <div class="layer" id="L_volume">
+      <div class="abs" id="vfill" style="left:6px;top:6px;height:44px;border-radius:22px;background:#fff"></div>
+      <div class="abs" id="vknob" style="top:20px;width:16px;height:16px;border-radius:50%;background:#0A0A0A"></div>
+      <svg class="abs" style="left:16px;top:16px" width="24" height="24" viewBox="0 0 24 24"><path d="M4 9h3l5-4v14l-5-4H4z" fill="#0A0A0A"/><path d="M16 8.5a5 5 0 0 1 0 7" fill="none" stroke="#0A0A0A" stroke-width="2.5" stroke-linecap="round"/></svg>
+    </div>
+    <!-- 07/08 toggle knob → tab indicator (one element) -->
+    <div class="layer" id="pill" style="background:#fff;border-radius:28px"></div>
+    <div class="layer" id="L_tabs" style="font-size:21px;font-weight:560"><span class="abs" id="tab0">Day</span><span class="abs" id="tab1">Week</span><span class="abs" id="tab2">Month</span></div>
+    <!-- 09 chart -->
+    <div class="layer" id="L_chart">
+      <div class="abs" style="left:32px;top:28px;font-size:20px;color:#8A8A8A">Revenue</div>
+      <div class="abs" style="left:32px;top:56px;font-size:40px;font-weight:600;letter-spacing:-0.02em">$48.2k</div>
+      <svg class="abs" style="left:0;top:0" width="560" height="340">
+        <path id="area" fill="#fff" fill-opacity="0.07"/>
+        <path id="line" fill="none" stroke="#fff" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+        <line id="guide" stroke="#fff" stroke-opacity="0.25" stroke-width="1.5" stroke-dasharray="4 5"/>
+        <circle id="dot" r="7" fill="#fff"/>
+      </svg>
+      <div class="abs" id="tip" style="width:120px;height:56px;border-radius:12px;background:#fff;color:#0A0A0A;transform-origin:50% 100%">
+        <div class="abs" style="left:14px;top:9px;font-size:14px;color:#8A8A8A">August</div>
+        <div class="abs" style="left:14px;top:26px;font-size:20px;font-weight:600">$5.1k</div>
+      </div>
+    </div>
+    <!-- 10 command palette -->
+    <div class="layer" id="L_cmdk" style="color:#0A0A0A">
+      <svg class="abs" style="left:24px;top:24px" width="24" height="24" viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="#0A0A0A" stroke-width="2.5"/><path d="M15.5 15.5 20 20" stroke="#0A0A0A" stroke-width="2.5" stroke-linecap="round"/></svg>
+      <div class="abs row" style="left:62px;top:0;height:72px;font-size:24px"><span id="qtext"></span><span id="caret" style="width:2.5px;height:28px;background:#0A0A0A;margin-left:2px"></span><span id="qph" style="color:#9A9893;margin-left:4px">Search commands</span></div>
+      <div class="abs" style="right:20px;top:20px;height:32px;padding:0 10px;border-radius:8px;border:1.5px solid #D9D6D0;font-size:16px;line-height:32px;color:#8A8A8A">⌘K</div>
+      <div class="abs row" id="res" style="left:8px;right:8px;top:72px;height:60px;border-radius:12px;padding:0 16px;box-sizing:border-box;gap:14px;font-size:20px;font-weight:520">
+        <svg width="24" height="24" viewBox="0 0 24 24"><path d="M12 4v11m-5-5 5 5 5-5M5 20h14" fill="none" stroke="#0A0A0A" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <span style="flex:1">Export chart</span>
+        <span style="height:28px;padding:0 9px;border-radius:7px;background:#fff;font-size:16px;line-height:28px;color:#8A8A8A">↵</span>
+      </div>
+    </div>
+    <!-- 11 toast -->
+    <div class="layer row" id="L_toast" style="padding:0 22px 0 18px;box-sizing:border-box;gap:12px;font-size:21px;font-weight:540">
+      <svg width="28" height="28" viewBox="0 0 28 28"><circle cx="14" cy="14" r="14" fill="#fff"/><path d="M8.5 14.5l3.5 3.5 7.5-8" fill="none" stroke="#0A0A0A" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <span style="flex:1">Chart exported</span><span style="color:#8A8A8A;font-size:19px">Undo</span>
+    </div>
+  </div>
+</div>
+<svg id="cursor" viewBox="0 0 34 34"><path d="M4 3 L4 27 L10.5 21 L15 31 L19 29.3 L14.6 19.6 L23 19.6 Z" fill="#0A0A0A" stroke="#fff" stroke-width="2" stroke-linejoin="round"/></svg>
+
+<script src="lib.js"></script>
+<script>
+window.ready = false;
+const B = 0.5;                       // 120 BPM: one beat = 0.5 s, 7 bars = 28 beats = 14 s
+const DUR = 14;
+const $ = id => document.getElementById(id);
+
+// ---------- state geometry: [time, W, H, radius, zoom-fit] ----------
+const fit = (w, h) => Math.min(0.5 * 1920 / w, 0.5 * 1080 / h, 3.4);
+const STATES = [
+  [0.0, 240, 64, 32],     // button
+  [1.0, 72, 72, 36],      // loader
+  [3.0, 400, 60, 30],     // dynamic island
+  [4.0, 520, 232, 40],    // player
+  [6.0, 440, 56, 28],     // volume
+  [8.0, 132, 72, 36],     // toggle
+  [9.0, 456, 72, 36],     // tabs
+  [10.0, 560, 340, 36],   // chart
+  [11.0, 560, 72, 20],    // command palette
+  [11.6, 560, 140, 20],   // palette + result
+  [12.0, 380, 64, 32],    // toast
+  [13.0, 240, 64, 32],    // button again (= first frame)
+];
+const kW = STATES.map(s => [s[0], s[1]]), kH = STATES.map(s => [s[0], s[2]]), kR = STATES.map(s => [s[0], s[3]]);
+const kZ = STATES.map(s => [s[0], Math.log(fit(s[1], s[2]))]);
+const kBG = [[0, 10], [8.0, 201], [8.5, 10], [11.0, 255], [12.0, 10]];   // gray level of the shape
+
+// ---------- events: drive picture AND sound (exported for the audio build) ----------
+const CLICKS = [0.5, 4.0, 4.5, 8.5, 9.5];
+const DRAGS = [[5.0, 5.9], [6.5, 7.45]];         // press, release
+const TYPE = [11.25, 11.37, 11.49];
+window.EVENTS = [
+  ...CLICKS.map(t => ({ t, sound: 'click' })),
+  ...DRAGS.flatMap(([a, b]) => [{ t: a, sound: 'click', gain: 0.5 }, { t: b, sound: 'tick', gain: 0.6 }]),
+  ...TYPE.map(t => ({ t, sound: 'tick', gain: 0.45 })),
+  { t: 12.0, sound: 'click', gain: 0.5 },
+  ...[1.0, 3.0, 4.0, 6.0, 8.0, 9.0, 10.0, 11.0, 12.0, 13.0].map(t => ({ t: t - 0.08, sound: 'whoosh', gain: 0.22 })),
+  { t: 2.0, sound: 'success', gain: 0.45 },
+  { t: 10.55, sound: 'pop', gain: 0.35 },
+  { t: 12.02, sound: 'success', gain: 0.5 },
+];
+
+// ---------- helpers ----------
+function vis(el, t, wins) {                       // content swap with its own enter/exit + short blur
+  let k = 0;
+  for (const [a, b] of wins) {
+    const i = a == null ? 1 : smooth(a, a + 0.16, t);
+    const o = b == null ? 1 : 1 - smooth(b - 0.02, b + 0.1, t);
+    k = Math.max(k, Math.min(i, o));
+  }
+  el.style.display = k <= 0.001 ? 'none' : '';
+  el.style.opacity = k;
+  el.style.filter = k > 0.999 ? 'none' : `blur(${(1 - k) * 6}px)`;
+  return k;
+}
+function place(el, Wc, Hc, w, h, top) {           // centre a w×h layer inside the current shape
+  el.style.left = (Wc - w) / 2 + 'px';
+  el.style.top = (top == null ? (Hc - h) / 2 : top) + 'px';
+  el.style.width = w + 'px'; el.style.height = h + 'px';
+}
+const pulse = (t, at, d = 0.14) => smooth(at - 0.06, at, t) - smooth(at, at + d, t);
+const mmss = s => Math.floor(s / 60) + ':' + String(Math.floor(s % 60)).padStart(2, '0');
+
+// play ▶ ↔ pause ❚❚ as two quads with matching points
+const PLAY = [[[0, 0], [16, 9], [16, 27], [0, 36]], [[16, 9], [32, 18], [32, 18], [16, 27]]];
+const PAUSE = [[[0, 0], [11, 0], [11, 36], [0, 36]], [[21, 0], [32, 0], [32, 36], [21, 36]]];
+const quad = (A, Bq, k) => 'M' + A.map((p, i) => [lerp(p[0], Bq[i][0], k), lerp(p[1], Bq[i][1], k)].map(v => v.toFixed(2)).join(' ')).join('L') + 'Z';
+
+// chart data (deterministic)
+const VALS = [3.2, 3.6, 3.1, 4.0, 4.4, 3.9, 4.8, 5.1, 4.6, 5.4, 5.9, 6.3];
+const PTS = VALS.map((v, i) => [40 + i * (480 / 11), 304 - (v - 2.8) * (150 / 3.6)]);
+const HOVER = 7;
+
+// ---------- drags: value computed from the cursor while held ----------
+const pDrag = t => lerp(0.22, 0.74, easeInOut(clamp((t - 5.05) / 0.8)));         // progress knob
+const progKnob = p => [-260 + 28 + p * 464, -116 + 176];                            // shape-local
+const volX = t => lerp(-58, 340, easeInOut(clamp((t - 6.55) / 0.75)));             // cursor x on volume
+function volume(t) {
+  const held = t >= 6.5 && t < 7.45;
+  const cx = held ? volX(t) : volX(7.45);
+  const end = cx + 220 + 22;                                                         // fill end (shape-left)
+  const v = t < 6.5 ? 0.35 : clamp((end - 50) / 384);
+  const over = Math.max(0, end - 434);
+  let stretch = 70 * (1 - Math.exp(-over / 90));
+  if (t >= 7.45) { const s0 = 70 * (1 - Math.exp(-Math.max(0, volX(7.45) + 242 - 434) / 90)); stretch = s0 * (1 - spring(t - 7.45, 18, 0.7)); }
+  return { v, stretch, cx };
+}
+
+// ---------- cursor: free motion is a spring track; drags override; hand-back decays ----------
+const CUR = [
+  [0, [40, 14]], [1.1, [92, 84]], [3.45, [120, 8]], [4.15, [196, -22]], [4.7, progKnob(0.22)],
+  [5.95, [60, 110]], [6.15, [-58, 4]], [7.6, [130, 70]], [8.1, [24, 8]], [9.08, [4, 10]],
+  [10.15, [PTS[HOVER][0] - 280 + 2, PTS[HOVER][1] - 170 + 4]], [11.1, [210, 130]], [12.45, [40, 14]],
+];
+function cursorLocal(t) {
+  let [x, y] = track2(CUR, t, 13, 0.8);
+  const hand = (t0, p) => { const k = 1 - spring(t - t0, 16, 0.85); x += (p[0] - track2(CUR, t0, 13, 0.8)[0]) * k; y += (p[1] - track2(CUR, t0, 13, 0.8)[1]) * k; };
+  if (t >= 5.0 && t < 5.9) return progKnob(pDrag(t));
+  if (t >= 5.9 && t < 6.5) hand(5.9, progKnob(pDrag(5.9)));
+  if (t >= 6.5 && t < 7.45) return [volume(t).cx, 4];
+  if (t >= 7.45) hand(7.45, [volX(7.45), 4]);
+  return [x, y];
+}
+const pressed = t => Math.max(...CLICKS.map(c => pulse(t, c)), ...DRAGS.map(([a, b]) => smooth(a - 0.06, a, t) - smooth(b, b + 0.1, t)));
+
+window.render = function (t) {
+  t = ((t % DUR) + DUR) % DUR;
+  const vol = volume(t);
+  const W = track(kW, t, 15, 0.78) + (t >= 6.4 && t < 8.6 ? vol.stretch : 0);
+  const H = track(kH, t, 15, 0.78);
+  const R = Math.min(track(kR, t, 15, 0.78), H / 2);
+  const zoom = Math.exp(track(kZ, t, 9, 0.95));
+  const offX = t >= 6.4 && t < 8.6 ? vol.stretch / 2 : 0;          // volume is anchored left: it grows to the right
+  const g = Math.round(clamp(track(kBG, t, 20, 1), 0, 255));
+  const press = 1 - 0.035 * Math.max(...[0.5, 4.0, 8.5].map(c => pulse(t, c)));
+
+  const s = $('shape').style;
+  s.left = 960 + offX - W / 2 + 'px'; s.top = 540 - H / 2 + 'px';
+  s.width = W + 'px'; s.height = H + 'px'; s.borderRadius = R + 'px';
+  s.background = `rgb(${g},${g},${Math.round(g * 0.995)})`;
+  s.transform = `scale(${press})`;
+  const white = smooth(225, 255, g);
+  s.boxShadow = `0 1px 0 rgba(0,0,0,${0.05 * white}), 0 18px 40px rgba(0,0,0,${0.09 * white})`;
+  $('stage').style.transform = `scale(${zoom})`;
+
+  // 01 button
+  if (vis($('L_button'), t, [[null, 1.0], [13.05, null]])) place($('L_button'), W, H, 240, 64);
+  // 02 loader
+  if (vis($('L_loader'), t, [[1.1, 2.0]])) {
+    place($('L_loader'), W, H, 72, 72);
+    const L = 2 * Math.PI * 16;
+    $('arc').setAttribute('stroke-dasharray', `${L * (0.22 + 0.08 * Math.sin(t * 6))} ${L}`);
+    $('arc').setAttribute('transform', `rotate(${t * 560} 36 36)`);
+  }
+  // 03 check
+  if (vis($('L_check'), t, [[2.0, 3.0]])) { place($('L_check'), W, H, 72, 72); $('tick').setAttribute('stroke-dasharray', `${smooth(2.02, 2.32, t)} 1`); }
+  // 04 island
+  if (vis($('L_island'), t, [[3.08, 4.0]])) {
+    place($('L_island'), W, H, 400, 60);
+    [...$('wave').children].forEach((b, i) => { const h = 8 + 16 * Math.abs(Math.sin(t * 7.5 + i * 1.7)); b.style.cssText = `display:block;width:4px;height:${h}px;border-radius:2px;background:#fff`; });
+  }
+  // 05 player
+  if (vis($('L_player'), t, [[4.1, 6.0]])) {
+    place($('L_player'), W, H, 520, 232);
+    const k = spring(t - 4.5, 22, 0.8);
+    $('pp1').setAttribute('d', quad(PLAY[0], PAUSE[0], k)); $('pp2').setAttribute('d', quad(PLAY[1], PAUSE[1], k));
+    const p = t < 5.0 ? 0.22 + 0.004 * Math.max(0, t - 4.5) : pDrag(Math.min(t, 5.9)) + 0.004 * Math.max(0, t - 5.9);
+    $('pfill').style.width = p * 464 + 'px';
+    $('pknob').style.left = 28 + p * 464 - 11 + 'px';
+    const grab = smooth(4.94, 5.0, t) - smooth(5.9, 6.0, t);
+    $('pknob').style.transform = `scale(${1 + 0.3 * grab})`;
+    $('ptime').textContent = mmss(p * 168);
+  }
+  // 06 volume
+  if (vis($('L_volume'), t, [[6.08, 8.0]])) {
+    const w = 440 + vol.stretch;
+    place($('L_volume'), W, H, w, 56);
+    $('vfill').style.width = 44 + vol.v * 384 + vol.stretch + 'px';
+    $('vknob').style.left = 6 + 44 + vol.v * 384 + vol.stretch - 30 + 'px';
+  }
+  // 07 toggle knob → 08 tab indicator: one pill, two edges on different springs (leading edge is faster)
+  const pk = vis($('pill'), t, [[8.05, 10.0]]);
+  if (pk) {
+    const Wt = W, Ht = H;
+    // edges measured from the shape's left; toggle box is 132 wide, tabs box 456 wide (both centred)
+    const toggleOff = (Wt - 132) / 2, tabsOff = (Wt - 456) / 2;
+    const inTabs = smooth(8.9, 9.1, t);
+    const l = track([[0, 8], [8.5, 68], [9.0, 8], [9.5, 154]], t, 14, 0.8);
+    const r = track([[0, 64], [8.5, 124], [9.0, 154], [9.5, 300]], t, 24, 0.8);
+    const off = lerp(toggleOff, tabsOff, track([[0, 0], [9.0, 1]], t, 15, 0.78));
+    const ps = $('pill').style;
+    ps.left = off + l + 'px'; ps.width = Math.max(0, r - l) + 'px';
+    ps.top = (Ht - 56) / 2 + 'px'; ps.height = '56px';
+    ps.background = '#fff';
+    void inTabs;
+  }
+  if (vis($('L_tabs'), t, [[9.1, 10.0]])) {
+    place($('L_tabs'), W, H, 456, 72);
+    const l = track([[0, 8], [8.5, 68], [9.0, 8], [9.5, 154]], t, 14, 0.8), r = track([[0, 64], [8.5, 124], [9.0, 154], [9.5, 300]], t, 24, 0.8);
+    ['tab0', 'tab1', 'tab2'].forEach((id, i) => {
+      const c = 8 + 146.67 * (i + 0.5);
+      const inside = clamp((Math.min(r, c + 30) - Math.max(l, c - 30)) / 60);
+      const v = Math.round(lerp(255, 10, inside));
+      const e = $(id).style; e.left = c + 'px'; e.top = '36px'; e.transform = 'translate(-50%,-50%)'; e.color = `rgb(${v},${v},${v})`;
+    });
+  }
+  // 09 chart
+  if (vis($('L_chart'), t, [[10.1, 11.0]])) {
+    place($('L_chart'), W, H, 560, 340);
+    const draw = smooth(10.05, 10.6, t);
+    const n = draw * (PTS.length - 1), i0 = Math.floor(n);
+    const pts = PTS.slice(0, i0 + 1);
+    if (i0 < PTS.length - 1) { const a = PTS[i0], b = PTS[i0 + 1], f = n - i0; pts.push([lerp(a[0], b[0], f), lerp(a[1], b[1], f)]); }
+    const d = 'M' + pts.map(p => p[0].toFixed(1) + ' ' + p[1].toFixed(1)).join('L');
+    $('line').setAttribute('d', d);
+    const last = pts[pts.length - 1];
+    $('area').setAttribute('d', d + `L${last[0]} 320L${PTS[0][0]} 320Z`);
+    const hv = spring(t - 10.55, 22, 0.8);
+    const [px, py] = PTS[HOVER];
+    $('dot').setAttribute('cx', px); $('dot').setAttribute('cy', py); $('dot').setAttribute('r', 7 * hv);
+    $('guide').setAttribute('x1', px); $('guide').setAttribute('x2', px); $('guide').setAttribute('y1', py); $('guide').setAttribute('y2', 320);
+    $('guide').setAttribute('stroke-opacity', 0.25 * hv);
+    const tip = $('tip').style; tip.left = px - 60 + 'px'; tip.top = py - 76 + 'px';
+    tip.opacity = clamp(hv * 1.5); tip.transform = `scale(${0.85 + 0.15 * hv})`;
+  }
+  // 10 command palette (anchored to the top so the input row stays put while the result row grows in)
+  if (vis($('L_cmdk'), t, [[11.08, 12.0]])) {
+    place($('L_cmdk'), W, H, 560, 140, 0);
+    const n = TYPE.filter(x => t >= x).length;
+    $('qtext').textContent = 'exp'.slice(0, n);
+    $('qph').style.display = n ? 'none' : 'inline';
+    $('caret').style.opacity = (n > 0 || Math.floor(t * 4) % 2 === 0) ? 1 : 0;
+    const r = smooth(11.58, 11.75, t);
+    const res = $('res').style; res.opacity = r; res.transform = `translateY(${(1 - r) * 8}px)`;
+    res.background = `rgb(${Math.round(lerp(239, 226, pulse(t, 11.98, 0.1)))},237,233)`;
+  }
+  // 11 toast
+  if (vis($('L_toast'), t, [[12.08, 13.0]])) place($('L_toast'), W, H, 380, 64);
+
+  // cursor (screen space, glued to the content through the camera)
+  const [lx, ly] = cursorLocal(t);
+  const sx = 960 + lx * zoom, sy = 540 + ly * zoom;
+  $('cursor').style.transform = `translate(${sx}px,${sy}px) scale(${1.7 * (1 - 0.14 * pressed(t))})`;
+};
+document.fonts.ready.then(() => { window.render(0); window.ready = true; });
+</script>
