@@ -9,14 +9,17 @@ type Props = {
   // 旁白在本镜头内的起止帧，逐字显示与配音同步
   voiceFrom: number;
   voiceFrames: number;
+  // 入场 / 出场时机：避开镜头之间的交叉淡化，免得前后两张卡片叠在一起
+  enterAt: number;
+  exitBy: number;
 };
 
-export const Card: React.FC<Props> = ({ label, title, text, voiceFrom, voiceFrames }) => {
+export const Card: React.FC<Props> = ({ label, title, text, voiceFrom, voiceFrames, enterAt, exitBy }) => {
   const frame = useCurrentFrame();
-  const { fps, durationInFrames } = useVideoConfig();
+  const { fps } = useVideoConfig();
 
-  const enter = spring({ frame, fps, config: { damping: 200 }, durationInFrames: 24 });
-  const exit = interpolate(frame, [durationInFrames - 14, durationInFrames], [1, 0], {
+  const enter = spring({ frame: frame - enterAt, fps, config: { damping: 200 }, durationInFrames: 24 });
+  const exit = interpolate(frame, [exitBy - 12, exitBy], [1, 0], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
   });

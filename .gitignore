@@ -10,4 +10,3 @@ public/audio/*.wav
 # 离线 TTS 的虚拟环境与转换后的模型
 .venv-tts/
 scripts/local_tts_models/
-public/clips/.placeholders

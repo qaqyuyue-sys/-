@@ -11,8 +11,8 @@
   python3 scripts/fetch_footage.py --skip 2           # 跳过每个镜头的前 2 个候选（对结果不满意时换一批）
   python3 scripts/fetch_footage.py --list 5           # 只列出第 5 镜的候选，不下载
 
-规则：只要横版、宽度 ≥ 1920、时长 ≥ 镜头时长 + 1 秒；已存在的非占位素材不会被覆盖
-（make_placeholders.sh 生成的占位文件会被替换）。来源与作者写入 public/clips/CREDITS.md。
+规则：只要横版、宽度 ≥ 1920、时长 ≥ 镜头时长 + 1 秒；已存在的素材不会被覆盖（用 --only 强制重找）。
+来源与作者写入 public/clips/CREDITS.md。下载完成后运行 `gen_voice.py --engine probe`，对应镜头会从插画切换为实拍。
 下载后请务必人工过一遍画面：API 无法判断画面是不是西安、有没有人群。
 """
 import argparse
@@ -26,7 +26,6 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 CLIPS = ROOT / "public" / "clips"
 CREDITS = CLIPS / "CREDITS.md"
-PLACEHOLDER_MARK = CLIPS / ".placeholders"
 UA = "xian-promo/1.0"
 
 
@@ -106,7 +105,6 @@ def main() -> None:
         sys.exit("请设置 PEXELS_API_KEY 或 PIXABAY_API_KEY（均可免费申请）")
 
     board = json.loads((ROOT / "scripts" / "storyboard.json").read_text(encoding="utf-8"))
-    placeholders = set(PLACEHOLDER_MARK.read_text().split()) if PLACEHOLDER_MARK.exists() else set()
     credits = {}
     if CREDITS.exists():
         for line in CREDITS.read_text(encoding="utf-8").splitlines():
@@ -119,8 +117,7 @@ def main() -> None:
         if args.only and i not in args.only:
             continue
         out = CLIPS / s["clip"]
-        is_placeholder = s["clip"] in placeholders
-        if out.exists() and not is_placeholder and not args.only and not args.list:
+        if out.exists() and not args.only and not args.list:
             print(f"[{i:02d}] 已有素材，跳过：{s['clip']}")
             continue
         found = candidates(s, s["targetSec"] + 1)
@@ -134,10 +131,8 @@ def main() -> None:
         c = found[args.skip]
         print(f"[{i:02d}] {c['source']} {c['width']}x{c['height']} {c['duration']}s ← {c['page']}")
         download(c["url"], out)
-        placeholders.discard(s["clip"])
         credits[s["clip"]] = f"| `{s['clip']}` | {s['shot']} | {c['source']} | {c['author']} | {c['page']} |"
 
-    PLACEHOLDER_MARK.write_text("\n".join(sorted(placeholders)) + "\n")
     rows = [credits[k] for k in sorted(credits)]
     CREDITS.write_text(
         "# 素材来源\n\nPexels / Pixabay 素材均可免费商用、无需署名，但建议在片尾或简介中致谢。"

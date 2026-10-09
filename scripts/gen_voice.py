@@ -136,17 +136,22 @@ def main() -> None:
         audio_sec = round(duration(audio), 3)
         # 镜头至少保持分镜设定的时长；旁白较长时自动延长，保证“前留白 + 旁白 + 尾留白”
         dur = round(max(s["targetSec"], lead + audio_sec + tail), 3)
+        # 没有实拍素材的镜头改用矢量插画；素材放进 public/clips/ 后重新运行即可切换
+        has_clip = (ROOT / "public" / "clips" / s["clip"]).exists()
         scenes.append({
             "id": i,
             "label": f"{i:02d} / {len(board['scenes']):02d}",
             "title": s["title"],
             "text": s["text"],
             "clip": f"clips/{s['clip']}",
+            "visual": "clip" if has_clip else "illustration",
+            "art": s.get("art", "dawn"),
+            "camera": s.get("camera", "push"),
             "audio": f"audio/{audio.name}",
             "audioSec": audio_sec,
             "durationSec": dur,
         })
-        print(f"[{i:02d}] 旁白 {audio_sec:.2f}s → 镜头 {dur:.2f}s")
+        print(f"[{i:02d}] 旁白 {audio_sec:.2f}s → 镜头 {dur:.2f}s（{'实拍' if has_clip else '插画'}）")
 
     out = {k: board[k] for k in ("fps", "width", "height", "transitionSec", "leadInSec", "bgm")}
     out["scenes"] = scenes

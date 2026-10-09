@@ -6,6 +6,9 @@ export type Scene = {
   title: string;
   text: string;
   clip: string;
+  visual: "clip" | "illustration";
+  art: string;
+  camera: "push" | "pullback";
   audio: string;
   audioSec: number;
   durationSec: number;

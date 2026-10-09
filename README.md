@@ -1,10 +1,11 @@
 # 西安城市宣传片（Remotion + MiniMax 配音）
 
-约 56 秒、11 个镜头的城市宣传片工程：航拍素材 + 毛玻璃信息卡片 + 逐字字幕 + 逐句配音，画面与旁白按音频实测时长自动对齐。
+约 57 秒、11 个镜头的城市宣传片工程：航拍素材（缺素材的镜头自动用矢量插画）+ 毛玻璃信息卡片 + 逐字字幕 + 逐句配音 + 原创背景音乐，画面与旁白按音频实测时长自动对齐。
 
 - 画面：[Remotion](https://www.remotion.dev/)（React 写视频），镜头之间 0.5 秒交叉淡化，每个镜头缓慢推镜
 - 配音：MiniMax T2A（`speech-2.8-hd`）；备选 Edge TTS（免费、在线）或离线中文 TTS（无需任何网络服务和 Key）
-- 素材：`fetch_footage.py` 用 Pexels / Pixabay 官方 API 按分镜搜索词自动下载，并记录来源
+- 素材：`fetch_footage.py` 用 Pexels / Pixabay 官方 API 按分镜搜索词自动下载，并记录来源。没有素材的镜头自动换成分层剪影插画（大雁塔、钟楼、城墙、兵马俑、秦岭等），不需要任何素材也能出完整成片
+- 音乐：`make_bgm.py` 现场合成原创配乐（五声音阶铺底 + 类古筝拨弦 + 低音鼓），无版权问题
 - 字体：思源宋体 / 思源黑体（Noto Serif SC / Noto Sans SC）的子集，已放在 `public/fonts/`，渲染时**不需要访问 Google**
 
 ## 快速开始
@@ -19,7 +20,7 @@ pip install requests            # 用 MiniMax 配音
 # 1. 素材：自动下载（Key 免费申请），或手动按下方清单放入 public/clips/
 export PEXELS_API_KEY=你的Key          # 或 PIXABAY_API_KEY
 python3 scripts/fetch_footage.py
-#   素材没找齐时，先给缺的镜头生成渐变占位：./scripts/make_placeholders.sh
+#   没有素材的镜头会自动使用插画，可以先跳过这一步
 
 # 2. 生成配音，同时写出 src/scenes.json（镜头时长由音频时长决定）
 export MINIMAX_API_KEY=你的Key
@@ -27,10 +28,13 @@ python3 scripts/gen_voice.py --engine minimax
 #   MiniMax 不可用时：./scripts/setup_local_tts.sh && python3 scripts/gen_voice.py --engine local
 #   只想先看排版：python3 scripts/gen_voice.py --engine silent
 
-# 3. 预览
+# 3. 背景音乐（可选，需 pip install numpy scipy）
+python3 scripts/make_bgm.py
+
+# 4. 预览
 npm run studio
 
-# 4. 输出
+# 5. 输出
 npm run render       # out/xian-promo-1080p.mp4
 npm run render:4k    # out/xian-promo-4k.mp4（素材需为 4K 才有意义）
 ```
@@ -41,18 +45,21 @@ npm run render:4k    # out/xian-promo-4k.mp4（素材需为 4K 才有意义）
 scripts/storyboard.json     分镜脚本：文案、卡片标题、素材文件名、目标时长 ← 改内容只改这里
 scripts/gen_voice.py        逐句配音 + ffprobe 测时长 → src/scenes.json
 scripts/fetch_fonts.py      按文案下载需要的中文字体分片 → public/fonts/ + src/fonts.json
-scripts/make_placeholders.sh 为缺失的镜头生成占位视频
+scripts/fetch_footage.py    按搜索词从 Pexels / Pixabay 下载素材 → public/clips/ + CREDITS.md
+scripts/make_bgm.py         按时间轴合成原创背景音乐 → public/audio/bgm.mp3
+scripts/setup_local_tts.sh  安装离线中文 TTS（local_tts.py）
 src/scenes.json             生成文件：时间轴（不要手改，重新运行 gen_voice.py）
 src/XianPromo.tsx           主合成：镜头串联、转场、背景音乐压低
-src/components/Shot.tsx     单个镜头：视频 + 推镜 + 渐变遮罩 + 卡片 + 配音
+src/components/Shot.tsx     单个镜头：视频或插画 + 推镜/拉远 + 渐变遮罩 + 卡片 + 配音
 src/components/Card.tsx     信息卡片：入场弹出、金色细线、逐字字幕、出场淡出
+src/illustrations/          无素材时的矢量插画：primitives.tsx（山脊、塔、楼、俑等图元）+ scenes.tsx（11 幅场景）
 public/clips/               视频素材（文件名需与 storyboard.json 一致）
 public/audio/               生成的配音 vo_01.mp3 … vo_11.mp3（可选 bgm.mp3）
 ```
 
 ## 时间轴是怎么对齐的
 
-每个镜头时长 = `max(分镜目标时长, 前留白 0.4s + 旁白时长 + 尾留白 0.6s)`。旁白在镜头开始 0.4 秒后响起，字幕在旁白时长内逐字显示完；镜头之间的 0.5 秒淡化落在上一句旁白结束之后，不会出现两句重叠。旁白语速变化时只需重新运行 `gen_voice.py`，全片自动重排。
+每个镜头时长 = `max(分镜目标时长, 前留白 0.4s + 旁白时长 + 尾留白 0.9s)`。旁白在镜头开始 0.4 秒后响起，字幕在旁白时长内逐字显示完；镜头之间的 0.5 秒淡化落在上一句旁白结束之后，不会出现两句重叠。旁白语速变化时只需重新运行 `gen_voice.py`，全片自动重排。
 
 ## 配音（MiniMax）
 
@@ -118,9 +125,15 @@ python3 scripts/gen_voice.py --engine local  # 合成 11 句，自动响度归�
 3. `python3 scripts/gen_voice.py --engine minimax`
 4. `npm run studio` 检查。
 
-## 背景音乐（可选）
+## 实拍素材与插画的切换
 
-把纯音乐放到 `public/audio/bgm.mp3`，在 `scripts/storyboard.json` 中设置 `"bgm": "audio/bgm.mp3"`，再运行一次 `gen_voice.py`（`--engine probe` 即可）。旁白出现时音乐自动压到约 -20dB，空隙处回升，片头片尾自动淡入淡出。
+`gen_voice.py` 每次运行都会检查 `public/clips/` 下有没有对应文件：有就用实拍，没有就用 `storyboard.json` 中 `art` 字段指定的插画。所以可以先用插画出片，素材找到一个放一个，放好后运行 `python3 scripts/gen_voice.py --engine probe` 再渲染即可。第 11 镜设置了 `"camera": "pullback"`，实拍或插画都会缓慢拉远收尾。
+
+## 背景音乐
+
+- 原创配乐：`python3 scripts/make_bgm.py`。它按当前时间轴生成同样长度的音乐，在第 1 镜、兵马俑、夜景和片尾落低音鼓，并自动启用背景音乐。改了镜头时长或重新配音后需要重新运行。
+- 用自己的音乐：放到 `public/audio/bgm.mp3`，在 `scripts/storyboard.json` 中设置 `"bgm": "audio/bgm.mp3"`，再运行一次 `gen_voice.py --engine probe`。
+- 旁白出现时音乐压到 -14dB，句间空隙回到 -8dB，过渡约 0.4 秒；片头片尾自动淡入淡出（`src/XianPromo.tsx` 中的 `SPEAK` / `GAP` 可调）。
 
 ## 在 Claude Code 云端环境里运行
 
@@ -138,4 +151,5 @@ API Key 请在同一设置页里以环境变量的形式添加：`MINIMAX_API_KE
 
 - Linux + Chromium 下完成整片 1080p 渲染。用测试音检测，11 句旁白的起点与时间轴误差都在 0.06 秒以内（来自 MP3 编码固有延迟）。
 - 离线 TTS（`--engine local`）已生成全部 11 句，成片约 56.8 秒；逐句检查过注音。
+- 11 幅插画逐帧渲染检查过构图（地标避开左下角卡片）；原创配乐已生成并混入成片。
 - MiniMax 接口和 Pexels/Pixabay 下载**没有实际调用过**：所在云环境的网络策略拦截了这些域名，也没有 Key。首次使用 MiniMax 时请先用 `--only 1` 试一句。
