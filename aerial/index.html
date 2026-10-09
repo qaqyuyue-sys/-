@@ -1,0 +1,295 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Yangling aerial</title>
+<style>html,body{margin:0;background:#000;overflow:hidden}canvas{display:block}</style>
+<script type="importmap">{"imports":{"three":"./node_modules/three/build/three.module.js"}}</script>
+</head>
+<body>
+<canvas id="c"></canvas>
+<script type="module">
+// Aerial shot renderer. The frame is a pure function of t (seconds), so any
+// frame can be rendered on its own: window.render(t).
+import * as THREE from 'three';
+
+const q = new URLSearchParams(location.search);
+const SHOT = q.get('shot'), DUR = parseFloat(q.get('dur') || '3');
+const W = parseInt(q.get('w') || '1920'), H = parseInt(q.get('h') || '1080');
+window.ready = false;
+
+const canvas = document.getElementById('c');
+const renderer = new THREE.WebGLRenderer({canvas, antialias: q.get('aa') !== '0', preserveDrawingBuffer: true});
+renderer.setPixelRatio(1);
+renderer.setSize(W, H, false);
+canvas.style.width = W + 'px'; canvas.style.height = H + 'px';
+
+const SKIES = {
+  //          zenith        horizon       haze          sun az/el   sun colour    grade tint         vis(m)  light
+  dawn:   {z:[.22,.32,.52], h:[1.0,.80,.56], fog:[.93,.80,.64], az:95,  el:6,  sc:[1,.70,.45], tint:[1.03,1.0,.95], vis:38000, ex:.92},
+  golden: {z:[.24,.42,.68], h:[.98,.84,.62], fog:[.90,.82,.70], az:248, el:14, sc:[1,.78,.52], tint:[1.03,1.00,.95], vis:52000, ex:1.0},
+  day:    {z:[.18,.40,.78], h:[.74,.85,.95], fog:[.76,.84,.92], az:165, el:48, sc:[1,.97,.92], tint:[1.00,1.01,1.02], vis:65000, ex:1.0},
+  dusk:   {z:[.13,.16,.36], h:[.99,.58,.38], fog:[.78,.58,.52], az:258, el:3,  sc:[1,.50,.30], tint:[1.03,.94,.92], vis:36000, ex:.82},
+};
+
+function lerp(a, b, u) { return a + (b - a) * u; }
+function ease(u, kind) {
+  u = Math.min(1, Math.max(0, u));
+  if (kind === 'in') return u * u * u;
+  return 0.5 - 0.5 * Math.cos(Math.PI * u);
+}
+function catmull(keys, u) {           // keys: [[u, a, b, c], ...]
+  if (u <= keys[0][0]) return keys[0].slice(1);
+  if (u >= keys[keys.length - 1][0]) return keys[keys.length - 1].slice(1);
+  let i = 0; while (keys[i + 1][0] < u) i++;
+  const p0 = keys[Math.max(0, i - 1)], p1 = keys[i], p2 = keys[i + 1], p3 = keys[Math.min(keys.length - 1, i + 2)];
+  const s = (u - p1[0]) / (p2[0] - p1[0]);
+  const out = [];
+  for (let k = 1; k < 4; k++) {
+    const a = p0[k], b = p1[k], c = p2[k], d = p3[k];
+    out.push(0.5 * (2 * b + (-a + c) * s + (2 * a - 5 * b + 4 * c - d) * s * s + (-a + 3 * b - 3 * c + d) * s * s * s));
+  }
+  return out;
+}
+
+const terrainVS = `
+  varying vec3 vWorld; varying vec3 vNormal;
+  void main(){
+    vec4 w = modelMatrix * vec4(position,1.0);
+    vWorld = w.xyz; vNormal = normalize(normal);
+    gl_Position = projectionMatrix * viewMatrix * w;
+  }`;
+const terrainFS = `
+  uniform sampler2D texA, texB; uniform float wipe, wipeAngle;
+  uniform vec4 ext; uniform vec4 clipExt; uniform float useClip;
+  uniform vec3 sunDir, sunCol, fogCol, tint; uniform float vis, expo, shade;
+  varying vec3 vWorld; varying vec3 vNormal;
+  void main(){
+    float e = vWorld.x, n = -vWorld.z;
+    if (useClip > 0.5 && e > clipExt.x && e < clipExt.z && n > clipExt.y && n < clipExt.w) discard;
+    vec2 uv = vec2((e - ext.x) / (ext.z - ext.x), (n - ext.y) / (ext.w - ext.y));
+    vec3 a = texture2D(texA, uv).rgb;
+    vec3 col = a;
+    if (wipe > -0.5) {
+      vec3 b = texture2D(texB, uv).rgb;
+      float d = dot(uv - 0.5, vec2(cos(wipeAngle), sin(wipeAngle))) + 0.5;
+      float m = smoothstep(wipe - 0.06, wipe + 0.06, d);
+      col = mix(b, a, m);
+      float edge = exp(-pow((d - wipe) / 0.025, 2.0));
+      col += vec3(1.0, 0.86, 0.55) * edge * 0.55;
+    }
+    float inside = step(0.0, uv.x) * step(uv.x, 1.0) * step(0.0, uv.y) * step(uv.y, 1.0);
+    col = mix(fogCol * 0.8, col, inside);
+    col = pow(col, vec3(2.2));
+    float lam = clamp(dot(normalize(vNormal), sunDir), 0.0, 1.0);
+    col *= mix(1.0, 0.55 + 0.75 * lam, shade);
+    col *= sunCol * 0.18 + 0.82;
+    float dist = length(vWorld - cameraPosition);
+    float f = 1.0 - exp(-pow(dist / vis, 1.25));
+    vec3 fogL = pow(fogCol, vec3(2.2));
+    col = mix(col, fogL, clamp(f, 0.0, 1.0));
+    col = pow(col * expo, vec3(1.0 / 2.2)) * tint;
+    gl_FragColor = vec4(col, 1.0);
+  }`;
+
+const skyFS = `
+  uniform vec3 zen, hor, sunDir, sunCol; varying vec3 vDir;
+  void main(){
+    vec3 d = normalize(vDir);
+    float h = max(d.y, 0.0);
+    vec3 col = mix(hor, zen, pow(h, 0.55));
+    float s = max(dot(d, sunDir), 0.0);
+    col += sunCol * (pow(s, 900.0) * 1.4 + pow(s, 12.0) * 0.35 + pow(s, 3.0) * 0.12);
+    if (d.y < 0.0) col = hor;
+    gl_FragColor = vec4(col, 1.0);
+  }`;
+const skyVS = `varying vec3 vDir; void main(){ vDir = (modelMatrix * vec4(position,0.0)).xyz;
+  gl_Position = projectionMatrix * viewMatrix * modelMatrix * vec4(position,1.0); gl_Position.z = gl_Position.w; }`;
+
+const cloudFS = `
+  uniform float t, opacity, seed; uniform vec3 sunCol, fogCol; varying vec2 vUv; varying vec3 vWorld;
+  float hash(vec2 p){ return fract(sin(dot(p, vec2(127.1, 311.7)) + seed) * 43758.5453); }
+  float noise(vec2 p){ vec2 i = floor(p), f = fract(p); f = f*f*(3.0-2.0*f);
+    return mix(mix(hash(i), hash(i+vec2(1,0)), f.x), mix(hash(i+vec2(0,1)), hash(i+vec2(1,1)), f.x), f.y); }
+  float fbm(vec2 p){ float v = 0.0, a = 0.5; for (int i = 0; i < 5; i++){ v += a * noise(p); p *= 2.03; a *= 0.5; } return v; }
+  void main(){
+    vec2 p = vWorld.xz / 9000.0 + vec2(t * 0.004, t * 0.002);
+    float c = fbm(p);
+    c = smoothstep(0.50, 0.78, c);
+    float dist = length(vWorld - cameraPosition);
+    float near = smoothstep(200.0, 1800.0, dist);
+    float far = 1.0 - smoothstep(30000.0, 70000.0, dist);
+    vec3 col = mix(vec3(1.0), sunCol, 0.45) * mix(0.82, 1.06, fbm(p * 2.0 + 3.0));
+    col = mix(col, fogCol, 1.0 - far);
+    gl_FragColor = vec4(col, c * opacity * near * far);
+  }`;
+const cloudVS = `varying vec2 vUv; varying vec3 vWorld; void main(){ vUv = uv; vec4 w = modelMatrix * vec4(position,1.0);
+  vWorld = w.xyz; gl_Position = projectionMatrix * viewMatrix * w; }`;
+
+const arcVS = `attribute float along; varying float vAlong; void main(){ vAlong = along;
+  gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }`;
+const arcFS = `uniform float head, alpha; varying float vAlong;
+  void main(){ float d = head - vAlong; if (d < 0.0) discard;
+    float tail = exp(-d * 2.2); float glow = exp(-pow(d / 0.025, 2.0));
+    vec3 col = mix(vec3(1.0, 0.78, 0.36), vec3(1.0, 0.97, 0.88), glow);
+    gl_FragColor = vec4(col * (0.55 * tail + 1.6 * glow), (0.5 * tail + glow) * alpha); }`;
+
+async function loadBin(url) { return new Float32Array(await (await fetch(url)).arrayBuffer()); }
+function loadTex(url) {
+  return new Promise((res) => new THREE.TextureLoader().load(url, (t) => {
+    t.anisotropy = Math.min(renderer.capabilities.getMaxAnisotropy(), parseInt(q.get('aniso') || '4'));
+    t.colorSpace = THREE.NoColorSpace; t.generateMipmaps = true;
+    t.minFilter = THREE.LinearMipmapLinearFilter; res(t);
+  }));
+}
+
+function terrainMesh(dem, rows, cols, ext, exag, uniforms) {
+  const [e0, n0, e1, n1] = ext;
+  const g = new THREE.BufferGeometry();
+  const pos = new Float32Array(rows * cols * 3);
+  for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) {
+    const i = r * cols + c;
+    const e = lerp(e0, e1, c / (cols - 1)), n = lerp(n1, n0, r / (rows - 1));
+    const h = dem[i] || 400;
+    pos[i * 3] = e; pos[i * 3 + 1] = (h - 400) * exag + 400; pos[i * 3 + 2] = -n;
+  }
+  const idx = new Uint32Array((rows - 1) * (cols - 1) * 6);
+  let k = 0;
+  for (let r = 0; r < rows - 1; r++) for (let c = 0; c < cols - 1; c++) {
+    const a = r * cols + c, b = a + 1, d = a + cols, e = d + 1;
+    idx[k++] = a; idx[k++] = d; idx[k++] = b; idx[k++] = b; idx[k++] = d; idx[k++] = e;
+  }
+  g.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+  g.setIndex(new THREE.BufferAttribute(idx, 1));
+  g.computeVertexNormals();
+  const m = new THREE.ShaderMaterial({uniforms, vertexShader: terrainVS, fragmentShader: terrainFS});
+  return new THREE.Mesh(g, m);
+}
+
+function arcCurve(dir, len, height) {
+  const a = new THREE.Vector3(0, 520, 0);
+  const b = new THREE.Vector3(Math.cos(dir) * len, 400, -Math.sin(dir) * len);
+  const mid = a.clone().lerp(b, 0.5); mid.y = height;
+  return new THREE.QuadraticBezierCurve3(a, mid, b);
+}
+
+async function main() {
+  const man = await (await fetch(`assets/${SHOT}/manifest.json`)).json();
+  const world = await (await fetch('assets/world.json')).json();
+  const sky = SKIES[man.sky];
+  const sunDir = new THREE.Vector3(
+    Math.cos(sky.el * Math.PI / 180) * Math.sin(sky.az * Math.PI / 180),
+    Math.sin(sky.el * Math.PI / 180),
+    -Math.cos(sky.el * Math.PI / 180) * Math.cos(sky.az * Math.PI / 180)).normalize();
+  const sunCol = new THREE.Vector3(...sky.sc), fogCol = new THREE.Vector3(...sky.fog);
+
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(man.fov, W / H, 50, 400000);
+
+  const skyMesh = new THREE.Mesh(new THREE.SphereGeometry(300000, 48, 24),
+    new THREE.ShaderMaterial({side: THREE.BackSide, depthWrite: false, vertexShader: skyVS, fragmentShader: skyFS,
+      uniforms: {zen: {value: new THREE.Vector3(...sky.z)}, hor: {value: new THREE.Vector3(...sky.h)},
+                 sunDir: {value: sunDir}, sunCol: {value: sunCol}}}));
+  skyMesh.renderOrder = -1;
+  scene.add(skyMesh);
+
+  const common = (extra) => ({
+    sunDir: {value: sunDir}, sunCol: {value: sunCol}, fogCol: {value: fogCol},
+    tint: {value: new THREE.Vector3(...sky.tint)}, vis: {value: man.vis || sky.vis}, expo: {value: sky.ex},
+    shade: {value: 0.25}, wipe: {value: -1}, wipeAngle: {value: 0}, ...extra});
+
+  // horizon base layer (whole mosaic), with the detail region cut out
+  const [wdem, wtex] = await Promise.all([loadBin('assets/world_dem.bin'), loadTex('assets/' + man.world_tex)]);
+  const wu = common({texA: {value: wtex}, texB: {value: wtex}, ext: {value: new THREE.Vector4(...world.ext)},
+                     clipExt: {value: new THREE.Vector4(...man.ext.map((v, i) => v + (i < 2 ? 400 : -400)))},
+                     useClip: {value: 1}});
+  scene.add(terrainMesh(wdem, world.rows, world.cols, world.ext, man.exaggeration, wu));
+  // far ground plane beyond the mosaic so the horizon never shows an edge
+  const far = new THREE.Mesh(new THREE.PlaneGeometry(800000, 800000).rotateX(-Math.PI / 2),
+    new THREE.ShaderMaterial({uniforms: common({texA: {value: wtex}, texB: {value: wtex},
+      ext: {value: new THREE.Vector4(-1e7, -1e7, -1e7 + 1, -1e7 + 1)}, clipExt: {value: new THREE.Vector4(...world.ext)},
+      useClip: {value: 1}}), vertexShader: terrainVS, fragmentShader: terrainFS}));
+  far.position.y = 380; scene.add(far);
+
+  const dem = await loadBin(`assets/${SHOT}/dem.bin`);
+  const texs = await Promise.all(man.textures.map((f) => loadTex(`assets/${SHOT}/${f}`)));
+  const du = common({texA: {value: texs[0]}, texB: {value: texs[1] || texs[0]}, ext: {value: new THREE.Vector4(...man.ext)},
+                     clipExt: {value: new THREE.Vector4(0, 0, 0, 0)}, useClip: {value: 0}});
+  scene.add(terrainMesh(dem, man.dem.rows, man.dem.cols, man.ext, man.exaggeration, du));
+
+  const clouds = [];
+  if (man.clouds > 0) {
+    [[5200, 1.0, 1.3], [6900, 0.8, 7.7], [8600, 0.6, 3.1]].forEach(([alt, op, seed]) => {
+      const m = new THREE.Mesh(new THREE.PlaneGeometry(240000, 240000).rotateX(-Math.PI / 2),
+        new THREE.ShaderMaterial({transparent: true, depthWrite: false, side: THREE.DoubleSide,
+          uniforms: {t: {value: 0}, opacity: {value: op * man.clouds}, seed: {value: seed}, sunCol: {value: sunCol}, fogCol: {value: fogCol}},
+          vertexShader: cloudVS, fragmentShader: cloudFS}));
+      m.position.y = alt; scene.add(m); clouds.push(m);
+    });
+  }
+
+  const arcs = [];
+  if (man.arcs) {
+    const dirs = [[200, 260000], [168, 220000], [140, 300000], [112, 240000], [80, 200000], [40, 260000],
+                  [12, 280000], [-20, 230000], [-60, 250000], [228, 210000], [100, 150000], [190, 180000]];
+    dirs.forEach(([deg, len], i) => {
+      const curve = arcCurve(deg * Math.PI / 180, len, 9000 + len * 0.09);
+      const geo = new THREE.TubeGeometry(curve, 160, 70 + len * 0.0004, 6, false);
+      const along = new Float32Array(geo.attributes.position.count);
+      for (let s = 0; s <= 160; s++) for (let r = 0; r <= 6; r++) along[s * 7 + r] = s / 160;
+      geo.setAttribute('along', new THREE.BufferAttribute(along, 1));
+      const m = new THREE.Mesh(geo, new THREE.ShaderMaterial({transparent: true, depthWrite: false,
+        blending: THREE.AdditiveBlending, uniforms: {head: {value: 0}, alpha: {value: 1}},
+        vertexShader: arcVS, fragmentShader: arcFS}));
+      m.userData.delay = (i % 6) * 0.07 + Math.floor(i / 6) * 0.05;
+      scene.add(m); arcs.push(m);
+    });
+    const ring = new THREE.Mesh(new THREE.RingGeometry(0.8, 1, 96).rotateX(-Math.PI / 2),
+      new THREE.MeshBasicMaterial({color: 0xffd27a, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending}));
+    ring.position.y = 560; scene.add(ring); arcs.ring = ring;
+  }
+
+  const up = new THREE.Vector3();
+  window.render = function (t) {
+    const u = ease(t / DUR, man.topdown && man.topdown.ease);
+    if (man.topdown) {
+      const td = man.topdown, pan = td.pan || [0, 0], rot = td.rot || [0, 0];
+      const e = td.center[0] + pan[0] * u, n = td.center[1] + pan[1] * u;
+      camera.position.set(e, lerp(td.alt[0], td.alt[1], u), -n);
+      const r = lerp(rot[0], rot[1], u) * Math.PI / 180;
+      camera.up.set(Math.sin(r), 0, -Math.cos(r));
+      camera.lookAt(e, 0, -n);
+    } else if (man.orbit) {
+      const o = man.orbit, a = lerp(o.angle[0], o.angle[1], u) * Math.PI / 180, rad = lerp(o.radius[0], o.radius[1], u);
+      camera.position.set(o.center[0] + Math.cos(a) * rad, lerp(o.alt[0], o.alt[1], u), -(o.center[1] + Math.sin(a) * rad));
+      camera.up.set(0, 1, 0);
+      camera.lookAt(o.center[0], o.center[2], -o.center[1]);
+    } else {
+      const p = catmull(man.cam, u), l = catmull(man.look, u);
+      camera.position.set(p[0], p[2], -p[1]);
+      camera.up.set(0, 1, 0);
+      camera.lookAt(l[0], l[2], -l[1]);
+    }
+    if (man.wipe) {                       // A→B→C→D, one sweep per segment
+      const segs = man.textures.length - 1, x = Math.min(segs - 1e-4, (t / DUR) * segs * 1.02);
+      const i = Math.floor(x), f = ease((x - i) * 1.15);
+      du.texA.value = texs[i]; du.texB.value = texs[i + 1];
+      du.wipe.value = lerp(-0.1, 1.1, f); du.wipeAngle.value = 0.35;
+    }
+    clouds.forEach((m) => m.material.uniforms.t.value = t);
+    if (arcs.length) {
+      const phase = (man.arc_phase || 0) + (t / DUR) * (man.arc_phase ? 0.55 : 0.6);
+      arcs.forEach((m) => { m.material.uniforms.head.value = Math.max(0, (phase - m.userData.delay) * 1.8); });
+      const k = (phase * 3) % 1; arcs.ring.scale.setScalar(800 + 5200 * k); arcs.ring.material.opacity = 1 - k;
+    }
+    camera.updateMatrixWorld();
+    renderer.render(scene, camera);
+    renderer.getContext().finish();
+  };
+  window.render(0);
+  window.ready = true;
+}
+main();
+</script>
+</body>
+</html>

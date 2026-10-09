@@ -7,3 +7,6 @@ assets/fonts/*.otf
 assets/bgm.*
 .env
 __pycache__/
+models
+aerial/assets/
+aerial/node_modules/

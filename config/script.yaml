@@ -16,8 +16,8 @@ video:
   fps: 30
   transition: 0.5        # 镜头之间交叉溶解时长（秒）
   lead_in: 0.35          # 每句配音在该段开始后多久进入
-  tail: 0.55             # 每句配音结束后留白
-  grade: "eq=contrast=1.06:saturation=1.12:gamma=0.98,unsharp=5:5:0.4"
+  tail: 0.8              # 每句配音结束后留白
+  grade: "eq=contrast=1.03:saturation=1.05"
 
 tts:
   provider: minimax
@@ -29,20 +29,25 @@ tts:
   emotion: calm
   sample_rate: 32000
   bitrate: 128000
+  kokoro:                  # MiniMax 不可用时的本地备用引擎（Kokoro v1.1-zh）
+    speaker: 62            # 低沉男声；58–102 为男声
+    speed: 0.92
 
 music:
-  file: assets/bgm.mp3     # 可选；不存在则只有配音
+  file: assets/bgm.mp3     # 可选；不存在时按时间轴自动合成配乐（promo/music.py）
+  generate: true
   volume: 0.32
   duck: true               # 配音出现时自动压低音乐
 
 opening:                   # 片头无配音大标题（航拍晨曦）
-  duration: 4.0
+  duration: 4.5
   shots: [A01_dawn_aerial]
   card: {style: title, title: "杨 凌", subtitle: "YANGLING · 中国农科城"}
 
 lines:
   - id: L01
     voice: "四千多年前，后稷在这里教民稼穑。"
+    tts_text: "四千多年前，后稷在这里交民稼穑。"   # 教读 jiāo
     card: {tag: "农耕之源"}
     shots: [A02_wheat_aerial_sunrise, G01_wheat_ears_macro]
 
@@ -92,6 +97,6 @@ lines:
     shots: [A14_closing_pullback]
 
 ending:                    # 片尾无配音大标题，衔接最后一句
-  duration: 3.0
+  duration: 3.6
   shots: [A14_closing_pullback]
   card: {style: title, title: "杨凌", subtitle: "希望的田野 · 农业的未来"}

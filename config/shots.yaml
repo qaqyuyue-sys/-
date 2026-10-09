@@ -1,5 +1,9 @@
 # 镜头库：每个镜头 id 对应 footage/<id>.mp4
 #
+# 本片的成片画面由 aerial/ 用真实卫星影像与高程渲染（见 aerial/shots.yaml）。
+# 本文件保留图库检索/实拍替换用的说明：想换成实拍或图库素材时，
+# python make.py footage 会按下面的检索词下载，或手动放入同名文件覆盖。
+#
 # kind:     aerial（航拍） | ground（地面机位） | macro（特写/微距） | timelapse（延时）
 # camera:   运镜要求，供实拍或挑选素材时参考
 # local:    true = 必须是杨凌实景（地标镜头），图库里找不到，

@@ -2,8 +2,9 @@
 """杨凌城市宣传片 —— 一键生成
 
   python make.py fonts              下载思源宋体/黑体（GitHub）
+  python make.py models             下载 Kokoro 中文语音、Real-ESRGAN 超分模型（GitHub releases）
   python make.py footage            从 Pexels/Pixabay 检索下载通用镜头
-  python make.py tts                MiniMax 逐句合成配音
+  python make.py tts                逐句合成配音（MiniMax，不可用时自动改用本地 Kokoro）
   python make.py render             剪辑 + 卡片字幕 + 混音 → output/yangling_promo.mp4
   python make.py all                以上全部
 
@@ -15,7 +16,7 @@ import sys
 import urllib.request
 from pathlib import Path
 
-from promo import cards, footage, render, timeline, tts
+from promo import cards, footage, music, render, timeline, tts
 from promo.common import FONT_DIR, ROOT, load_script, load_shots, log, run
 
 FONT_URLS = {
@@ -34,6 +35,32 @@ def cmd_fonts(_):
             continue
         log(f"下载字体 {name}")
         urllib.request.urlretrieve(f"https://raw.githubusercontent.com/{path}", dest)
+
+
+MODEL_URLS = {
+    "kokoro": "https://github.com/k2-fsa/sherpa-onnx/releases/download/tts-models/kokoro-multi-lang-v1_1.tar.bz2",
+    "realesr-general-x4v3.pth": "https://github.com/xinntao/Real-ESRGAN/releases/download/v0.2.5.0/realesr-general-x4v3.pth",
+    "RealESRGAN_x4plus.pth": "https://github.com/xinntao/Real-ESRGAN/releases/download/v0.1.0/RealESRGAN_x4plus.pth",
+}
+
+
+def cmd_models(_):
+    """Kokoro zh TTS (MiniMax fallback) and Real-ESRGAN weights → models/, ESRGAN → ONNX."""
+    import tarfile
+    md = ROOT / "models"
+    md.mkdir(exist_ok=True)
+    if not (md / "kokoro-multi-lang-v1_1" / "model.onnx").exists():
+        log("下载 Kokoro v1.1-zh 语音模型（约 360MB）")
+        tar = md / "kokoro.tar.bz2"
+        urllib.request.urlretrieve(MODEL_URLS["kokoro"], tar)
+        with tarfile.open(tar) as t:
+            t.extractall(md)
+        tar.unlink()
+    for pth, onnx in (("realesr-general-x4v3.pth", "general.onnx"), ("RealESRGAN_x4plus.pth", "x4plus.onnx")):
+        if not (md / onnx).exists():
+            log(f"下载并转换 {pth}")
+            urllib.request.urlretrieve(MODEL_URLS[pth], md / pth)
+            run([sys.executable, ROOT / "aerial" / "sr" / "esrgan_onnx.py", "convert", md / pth, md / onnx])
 
 
 def make_test_footage(shots, footage_dir):
@@ -78,7 +105,11 @@ def cmd_render(args):
     clips = render.conform_shots(tl, shots, args.footage, v, args.build / "shots")
     base, mix = args.build / "base.mp4", args.build / "mix.wav"
     render.edit_base(tl, clips, v, base)
-    render.mix_audio(tl, script.get("music"), mix, ROOT)
+    mcfg = dict(script.get("music") or {})
+    if not (ROOT / mcfg.get("file", "assets/bgm.mp3")).exists() and mcfg.get("generate", True):
+        log("未提供背景音乐，按时间轴合成配乐")
+        mcfg["file"] = str(music.for_timeline(tl, args.build / "bgm.wav"))
+    render.mix_audio(tl, mcfg, mix, ROOT)
     overlay, mask = cards.render_layers(tl, v["width"], v["height"], v["fps"], args.build)
     render.composite(base, mask, overlay, mix, args.out)
     log(f"完成 → {args.out}  ({tl.duration:.1f}s)")
@@ -86,7 +117,7 @@ def cmd_render(args):
 
 def main():
     p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawTextHelpFormatter)
-    p.add_argument("step", choices=["fonts", "footage", "tts", "render", "all"])
+    p.add_argument("step", choices=["fonts", "models", "footage", "tts", "render", "all"])
     p.add_argument("--test", action="store_true", help="合成测试画面+占位音频，验证流水线")
     p.add_argument("--include-local", action="store_true",
                    help="杨凌实景镜头也先用图库通用素材占位")
@@ -97,7 +128,7 @@ def main():
     args.out = ROOT / (f"{base}/output/yangling_promo_TEST.mp4" if args.test
                        else "output/yangling_promo.mp4")
 
-    steps = {"fonts": [cmd_fonts], "footage": [cmd_footage], "tts": [cmd_tts],
+    steps = {"fonts": [cmd_fonts], "models": [cmd_models], "footage": [cmd_footage], "tts": [cmd_tts],
              "render": [cmd_render],
              "all": [cmd_fonts, cmd_footage, cmd_render]}[args.step]
     for s in steps:

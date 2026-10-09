@@ -1,2 +1,8 @@
 pyyaml>=6
 Pillow>=10
+numpy
+sherpa-onnx>=1.12
+onnx
+onnxruntime
+playwright
+rasterio
