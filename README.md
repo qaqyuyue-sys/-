@@ -15,7 +15,8 @@
 | [`config/script.yaml`](config/script.yaml) | 解说词、卡片标签、每句对应的镜头、配音与配乐参数 |
 | [`aerial/shots.yaml`](aerial/shots.yaml) | 23 个航拍镜头的真实坐标、季节、机位路径、天空 |
 | [`docs/分镜脚本.md`](docs/分镜脚本.md) | 分镜表与史实核对 |
-| `qa/review_log.md` | 自检打分记录 |
+| `qa/review_log.md` | 自检打分记录（两轮）与逐句语音识别同步验证 |
+| `release/杨凌城市宣传片_1080p.mp4` | **成片**（60.2s，1080p，46MB 发布版）；`release/杨凌城市宣传片_字幕.srt` 外挂字幕 |
 
 ## 流水线
 

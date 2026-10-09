@@ -6,6 +6,7 @@ Shot lengths come from the same timeline the final edit uses (voice durations
 straight into `python make.py render`.
 """
 import subprocess
+import yaml
 import sys
 from pathlib import Path
 
@@ -20,13 +21,17 @@ def main(only):
     sc = load_script()
     tl = timeline.build(sc, tts.synthesize(sc, ROOT / "build" / "audio"))
     T = sc["video"]["transition"]
+    cfg = yaml.safe_load(open(HERE / "shots.yaml", encoding="utf-8"))["shots"]
     for s in tl.shots:
         if only and s.id not in only:
             continue
         out = ROOT / "footage" / f"{s.id}.mp4"
         if out.exists() and not only:
             continue
-        if not (HERE / "assets" / s.id / "manifest.json").exists():
+        ad = HERE / "assets" / s.id
+        sr = cfg.get(s.id, {}).get("sr")
+        need = len(cfg.get(s.id, {}).get("wipe", [0]))
+        if not (ad / "manifest.json").exists() or (sr and len(list(ad.glob(f"*.sr_{sr}.jpg"))) < need):
             print("assets not ready:", s.id)
             continue
         dur = round(s.length + T + 0.2, 3)

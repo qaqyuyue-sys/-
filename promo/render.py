@@ -107,7 +107,7 @@ def mix_audio(tl, music, out, root):
         log("未找到背景音乐，仅输出配音")
         graph.append("[vox]anull[mix]")
     graph.append(f"[mix]afade=t=in:d=0.8,afade=t=out:st={end - 1.5:.3f}:d=1.5,"
-                 f"atrim=duration={end:.3f},loudnorm=I=-16:TP=-1.5:LRA=11[a]")
+                 f"atrim=duration={end:.3f},loudnorm=I=-14:TP=-1.5:LRA=11[a]")
     cmd += ["-filter_complex", ";".join(graph), "-map", "[a]", "-ar", "48000", out]
     run(cmd)
 

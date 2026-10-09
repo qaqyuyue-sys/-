@@ -27,7 +27,7 @@ canvas.style.width = W + 'px'; canvas.style.height = H + 'px';
 const SKIES = {
   //          zenith        horizon       haze          sun az/el   sun colour    grade tint         vis(m)  light
   dawn:   {z:[.22,.32,.52], h:[1.0,.80,.56], fog:[.93,.80,.64], az:95,  el:6,  sc:[1,.70,.45], tint:[1.03,1.0,.95], vis:38000, ex:.92},
-  golden: {z:[.24,.42,.68], h:[.98,.84,.62], fog:[.90,.82,.70], az:248, el:14, sc:[1,.78,.52], tint:[1.03,1.00,.95], vis:52000, ex:1.0},
+  golden: {z:[.16,.38,.74], h:[1.0,.83,.60], fog:[.90,.82,.70], az:248, el:14, sc:[1,.78,.52], tint:[1.03,1.00,.95], vis:52000, ex:1.0},
   day:    {z:[.18,.40,.78], h:[.74,.85,.95], fog:[.76,.84,.92], az:165, el:48, sc:[1,.97,.92], tint:[1.00,1.01,1.02], vis:65000, ex:1.0},
   dusk:   {z:[.13,.16,.36], h:[.99,.58,.38], fog:[.78,.58,.52], az:258, el:3,  sc:[1,.50,.30], tint:[1.03,.94,.92], vis:36000, ex:.82},
 };
@@ -79,7 +79,10 @@ const terrainFS = `
       col += vec3(1.0, 0.86, 0.55) * edge * 0.55;
     }
     float inside = step(0.0, uv.x) * step(uv.x, 1.0) * step(0.0, uv.y) * step(uv.y, 1.0);
-    col = mix(fogCol * 0.8, col, inside);
+    // dissolve the edge of the data into haze so the world never shows a rim
+    float edge = min(min(e - ext.x, ext.z - e), min(n - ext.y, ext.w - n));
+    float rim = useClip > 0.5 ? smoothstep(0.0, 15000.0, edge) : 1.0;
+    col = mix(fogCol, col, inside * rim);
     col = pow(col, vec3(2.2));
     float lam = clamp(dot(normalize(vNormal), sunDir), 0.0, 1.0);
     col *= mix(1.0, 0.55 + 0.75 * lam, shade);
@@ -234,7 +237,7 @@ async function main() {
                   [12, 280000], [-20, 230000], [-60, 250000], [228, 210000], [100, 150000], [190, 180000]];
     dirs.forEach(([deg, len], i) => {
       const curve = arcCurve(deg * Math.PI / 180, len, 9000 + len * 0.09);
-      const geo = new THREE.TubeGeometry(curve, 160, 70 + len * 0.0004, 6, false);
+      const geo = new THREE.TubeGeometry(curve, 160, (70 + len * 0.0004) * (man.arc_width || 1), 6, false);
       const along = new Float32Array(geo.attributes.position.count);
       for (let s = 0; s <= 160; s++) for (let r = 0; r <= 6; r++) along[s * 7 + r] = s / 160;
       geo.setAttribute('along', new THREE.BufferAttribute(along, 1));
@@ -280,7 +283,7 @@ async function main() {
     if (arcs.length) {
       const phase = (man.arc_phase || 0) + (t / DUR) * (man.arc_phase ? 0.55 : 0.6);
       arcs.forEach((m) => { m.material.uniforms.head.value = Math.max(0, (phase - m.userData.delay) * 1.8); });
-      const k = (phase * 3) % 1; arcs.ring.scale.setScalar(800 + 5200 * k); arcs.ring.material.opacity = 1 - k;
+      const k = (phase * 3) % 1; arcs.ring.scale.setScalar((800 + 5200 * k) * (man.arc_width ? 1.6 : 1)); arcs.ring.material.opacity = 1 - k;
     }
     camera.updateMatrixWorld();
     renderer.render(scene, camera);

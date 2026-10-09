@@ -118,15 +118,15 @@ class LineCard:
 
     def __init__(self, card, W, H):
         self.card = card
-        f_tag, f_idx, f_txt = font("sans_bold", 26), font("sans", 24), font("serif", 54)
-        lines = wrap(card.text, f_txt, int(W * 0.72))
-        line_h = int(54 * 1.42)
+        f_tag, f_idx, f_txt = font("sans_bold", 30), font("sans", 26), font("serif", 62)
+        lines = wrap(card.text, f_txt, int(W * 0.8))
+        line_h = int(62 * 1.42)
         tag_w = text_w(card.tag, f_tag, 3) + 32
         idx = f"{card.index:02d} / {card.total:02d}"
         row_w = tag_w + 20 + text_w(idx, f_idx)
         body_w = max([text_w(l, f_txt, 2) for l in lines] + [row_w])
         w = max(560, body_w + 2 * self.PAD_X)
-        pill_h = 42
+        pill_h = 46
         h = self.PAD_TOP + pill_h + 18 + line_h * len(lines) + 22 + 4 + self.PAD_BOTTOM
 
         img = glass_body(w, h, 118)

@@ -39,14 +39,15 @@ def serve():
     return srv.server_address[1]
 
 
-def post_filter(shot_cfg, W, H):
+def post_filter(shot_cfg, W, H, dur=1.0):
     vf = [f"scale={W}:{H}:flags=lanczos"]
     ts = shot_cfg.get("tiltshift")
     if ts:
         # blur grows toward top and bottom edges; centre band stays sharp
         mask = (f"geq=lum='255*min(1,pow(abs(Y/{H}-0.55)/0.32,2)*{ts})'")
         vf = [f"scale={W}:{H}:flags=lanczos,split[a][b];[b]gblur=sigma=6[bl];"
-              f"color=black:s={W}x{H},format=gray,{mask}[m];[a][bl][m]maskedmerge"]
+              f"color=black:s={W}x{H}:d={dur + 1:.2f},format=gray,{mask}[m];"
+              f"[bl][m]alphamerge[blm];[a][blm]overlay=format=auto,format=yuv420p"]
     vf.append("unsharp=5:5:0.45")
     return ",".join(vf)
 
@@ -78,7 +79,7 @@ def main():
         def frame(t):
             url = pg.evaluate(f"(() => {{ window.render({t}); return document.getElementById('c').toDataURL('image/jpeg', 0.96); }})()")
             return base64.b64decode(url.split(",", 1)[1])
-        vf = post_filter(cfg, W, H)
+        vf = post_filter(cfg, W, H, a.dur)
 
         if a.still is not None:
             raw = frame(a.still)
@@ -92,6 +93,7 @@ def main():
         enc = subprocess.Popen(
             ["ffmpeg", "-y", "-v", "error", "-f", "image2pipe", "-framerate", str(a.fps),
              "-c:v", "mjpeg", "-i", "-", "-filter_complex" if ";" in vf else "-vf", vf,
+             "-t", f"{a.dur:.3f}",
              "-c:v", "libx264", "-preset", "slow", "-crf", "15", "-pix_fmt", "yuv420p", a.out],
             stdin=subprocess.PIPE)
         t0 = time.time()
