@@ -1,0 +1,66 @@
+<!doctype html>
+<meta charset="utf-8">
+<style>
+@font-face { font-family: Geist; src: url(../fonts/Geist-Variable.woff2) format("woff2"); font-weight: 100 900; }
+@font-face { font-family: GeistMono; src: url(../fonts/GeistMono-Variable.woff2) format("woff2"); font-weight: 100 900; }
+html, body { margin: 0; width: 1920px; height: 1080px; overflow: hidden; background: #F4F3F0; }
+svg { position: absolute; inset: 0; }
+text { font-family: GeistMono, monospace; }
+text.ui { font-family: Geist, sans-serif; }
+</style>
+<svg id="s" width="1920" height="1080" viewBox="0 0 1920 1080"></svg>
+<script src="../lib.js"></script>
+<script>
+window.ready = false;
+const NS = 'http://www.w3.org/2000/svg';
+const el = (tag, attrs, parent) => { const e = document.createElementNS(NS, tag); for (const k in attrs) e.setAttribute(k, attrs[k]); (parent || S).appendChild(e); return e; };
+const S = document.getElementById('s');
+
+// Spec sheet of the music-player state: the shape is drawn as linework, then annotated.
+window.render = function (t) {
+  S.innerHTML = '';
+  // grid paper
+  for (let x = 0; x <= 1920; x += 40) el('line', { x1: x, y1: 0, x2: x, y2: 1080, stroke: '#0A0A0A', 'stroke-opacity': x % 200 ? 0.04 : 0.09 });
+  for (let y = 0; y <= 1080; y += 40) el('line', { x1: 0, y1: y, x2: 1920, y2: y, stroke: '#0A0A0A', 'stroke-opacity': y % 200 ? 0.04 : 0.09 });
+
+  const draw = smooth(0, 1.2, t);                 // linework draws on
+  const X = 560, Y = 340, W = 800, H = 400, R = 56;
+  const card = el('rect', { x: X, y: Y, width: W, height: H, rx: R, fill: '#0A0A0A', 'fill-opacity': smooth(1.0, 1.6, t) });
+  const outline = el('rect', { x: X, y: Y, width: W, height: H, rx: R, fill: 'none', stroke: '#0A0A0A', 'stroke-width': 2.5, pathLength: 1, 'stroke-dasharray': `${draw} 1` });
+
+  // content (white on the filled card)
+  const g = el('g', { opacity: smooth(1.4, 1.9, t) });
+  el('rect', { x: X + 56, y: Y + 56, width: 168, height: 168, rx: 28, fill: '#F4F3F0' }, g);
+  el('text', { x: X + 264, y: Y + 118, 'font-size': 44, 'font-weight': 600, fill: '#fff', class: 'ui' }, g).textContent = 'Morning Loop';
+  el('text', { x: X + 264, y: Y + 172, 'font-size': 30, fill: '#8a8a8a', class: 'ui' }, g).textContent = 'Synth Ensemble';
+  el('rect', { x: X + 56, y: Y + 286, width: W - 112, height: 10, rx: 5, fill: '#333' }, g);
+  el('rect', { x: X + 56, y: Y + 286, width: (W - 112) * 0.42, height: 10, rx: 5, fill: '#fff' }, g);
+  el('circle', { cx: X + 56 + (W - 112) * 0.42, cy: Y + 291, r: 16, fill: '#fff' }, g);
+  el('text', { x: X + 56, y: Y + 346, 'font-size': 24, fill: '#8a8a8a' }, g).textContent = '1:12';
+  el('text', { x: X + W - 56, y: Y + 346, 'font-size': 24, fill: '#8a8a8a', 'text-anchor': 'end' }, g).textContent = '2:48';
+  el('path', { d: `M${X + W - 150} ${Y + 92} l0 64 l52 -32 z`, fill: '#fff', 'stroke-linejoin': 'round' }, g);
+
+  // annotations: dimension lines + callouts
+  const ann = el('g', { opacity: smooth(1.8, 2.3, t), stroke: '#0A0A0A', 'stroke-width': 1.5, fill: 'none' });
+  el('line', { x1: X, y1: Y - 60, x2: X + W, y2: Y - 60 }, ann);
+  el('line', { x1: X, y1: Y - 76, x2: X, y2: Y - 44 }, ann); el('line', { x1: X + W, y1: Y - 76, x2: X + W, y2: Y - 44 }, ann);
+  el('line', { x1: X - 60, y1: Y, x2: X - 60, y2: Y + H }, ann);
+  el('line', { x1: X - 76, y1: Y, x2: X - 44, y2: Y }, ann); el('line', { x1: X - 76, y1: Y + H, x2: X - 44, y2: Y + H }, ann);
+  el('path', { d: `M${X + W - R * 0.3} ${Y + R * 0.3} L${X + W + 120} ${Y - 30} L${X + W + 260} ${Y - 30}` }, ann);
+  el('path', { d: `M${X + 56 + (W - 112) * 0.42} ${Y + 312} L${X + 56 + (W - 112) * 0.42 + 40} ${Y + H + 90} L${X + W + 260} ${Y + H + 90}` }, ann);
+
+  const lab = el('g', { opacity: smooth(1.8, 2.3, t) });
+  const L = (x, y, s, a = 'start', sz = 24) => { el('text', { x, y, 'font-size': sz, 'text-anchor': a, 'font-weight': 500, fill: '#0A0A0A' }, lab).textContent = s; };
+  L(X + W / 2, Y - 80, 'w 800', 'middle');
+  L(X - 84, Y + H / 2 + 8, 'h 400', 'end');
+  L(X + W + 268, Y - 22, 'radius 56');
+  L(X + W + 268, Y + H + 98, 'drag → value');
+  L(X + W + 268, Y + H + 130, 'spring  w22  ζ0.8', 'start', 20);
+
+  // header strip
+  L(80, 84, '05 / 12', 'start', 26);
+  L(80, 150, 'MUSIC PLAYER', 'start', 52);
+  L(1840, 92, '♩ = 120   bar 3 · beat 1', 'end', 24);
+};
+document.fonts.ready.then(() => { window.render(0); window.ready = true; });
+</script>

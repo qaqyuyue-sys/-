@@ -1,0 +1,69 @@
+<!doctype html>
+<meta charset="utf-8">
+<style>
+@font-face { font-family: Geist; src: url(../fonts/Geist-Variable.woff2) format("woff2"); font-weight: 100 900; }
+html, body { margin: 0; width: 1920px; height: 1080px; overflow: hidden; background: #ECEAE6; font-family: Geist, sans-serif; }
+#stage { position: absolute; inset: 0; transform-origin: 50% 50%; }
+#shape { position: absolute; left: 50%; top: 50%; background: #0A0A0A; overflow: hidden; }
+.layer { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; color: #fff; }
+#cursor { position: absolute; left: 0; top: 0; width: 34px; height: 34px; transform-origin: 4px 3px; }
+</style>
+<div id="stage">
+  <div id="shape">
+    <div class="layer" id="lbl" style="font-size:30px;font-weight:550;letter-spacing:-0.01em">Get started</div>
+    <div class="layer" id="spin"><svg width="72" height="72" viewBox="0 0 72 72"><circle id="arc" cx="36" cy="36" r="17" fill="none" stroke="#fff" stroke-width="4.5" stroke-linecap="round"/></svg></div>
+    <div class="layer" id="chk"><svg width="72" height="72" viewBox="0 0 72 72"><path id="tick" d="M24 37 l8 8 l16 -18" fill="none" stroke="#fff" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+    <div class="layer" id="isl" style="justify-content:space-between;padding:0 26px;box-sizing:border-box;font-size:22px;font-weight:500">
+      <span style="display:flex;align-items:center;gap:14px"><span style="width:30px;height:30px;border-radius:9px;background:#fff"></span>Payment sent</span>
+      <span style="color:#9a9a9a">$48.00</span>
+    </div>
+  </div>
+</div>
+<svg id="cursor" viewBox="0 0 34 34"><path d="M4 3 L4 27 L10.5 21 L15 31 L19 29.3 L14.6 19.6 L23 19.6 Z" fill="#0A0A0A" stroke="#fff" stroke-width="2" stroke-linejoin="round"/></svg>
+<script src="../lib.js"></script>
+<script>
+window.ready = false;
+const B = 0.5;                                   // 120 BPM
+const $ = id => document.getElementById(id);
+const arcLen = 2 * Math.PI * 17;
+
+function fade(el, t, tin, tout) {                // content swap: own enter/exit with a short blur
+  const a = tin == null ? 1 : smooth(tin, tin + 0.16, t);
+  const b = tout == null ? 1 : 1 - smooth(tout - 0.02, tout + 0.12, t);
+  const k = Math.min(a, b);
+  el.style.opacity = k;
+  el.style.filter = `blur(${(1 - k) * 8}px)`;
+  el.style.transform = `scale(${0.92 + 0.08 * k})`;
+}
+
+window.render = function (t) {
+  // shape geometry, springs per target change (card tier)
+  const W = track([[0, 300], [2 * B, 84], [5 * B, 84], [5 * B + 0.001, 84], [5.2 * B, 520]], t, 15, 0.78);
+  const H = track([[0, 84], [5.2 * B, 72]], t, 15, 0.78);
+  const press = 1 - 0.05 * (smooth(B - 0.06, B, t) - smooth(B, B + 0.14, t));
+  const s = $('shape').style;
+  s.width = W + 'px'; s.height = H + 'px'; s.borderRadius = H / 2 + 'px';
+  s.transform = `translate(-50%,-50%) scale(${press})`;
+
+  fade($('lbl'), t, null, 2 * B);
+  fade($('spin'), t, 2 * B + 0.12, 4 * B);
+  fade($('chk'), t, 4 * B, 5.2 * B);
+  fade($('isl'), t, 5.4 * B, null);
+  const rot = t * 540;                            // spinner: pure function of t
+  $('arc').setAttribute('stroke-dasharray', `${arcLen * 0.28} ${arcLen}`);
+  $('arc').setAttribute('transform', `rotate(${rot} 36 36)`);
+  const draw = smooth(4 * B, 4 * B + 0.3, t);
+  $('tick').setAttribute('stroke-dasharray', 40); $('tick').setAttribute('stroke-dashoffset', 40 * (1 - draw));
+
+  // camera: zoom so each state fills the frame
+  const zoom = track([[0, 2.3], [2 * B, 4.2], [5.2 * B, 2.3]], t, 9, 0.95);
+  $('stage').style.transform = `scale(${zoom})`;
+
+  // cursor in screen space, arrives on the button, clicks on beat 1, then drifts away
+  const cx = 960, cy = 540;
+  const [x, y] = track2([[0, [1500, 900]], [0.02, [cx + 120, cy + 20]], [1.3 * B, [cx + 520, cy + 330]]], t, 13, 0.8);
+  const click = 1 - 0.18 * (smooth(B - 0.06, B, t) - smooth(B, B + 0.12, t));
+  $('cursor').style.transform = `translate(${x}px,${y}px) scale(${2.2 * click})`;
+};
+document.fonts.ready.then(() => { window.render(0); window.ready = true; });
+</script>

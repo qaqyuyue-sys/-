@@ -1,0 +1,64 @@
+<!doctype html>
+<meta charset="utf-8">
+<style>
+@font-face { font-family: Geist; src: url(../fonts/Geist-Variable.woff2) format("woff2"); font-weight: 100 900; }
+@font-face { font-family: GeistMono; src: url(../fonts/GeistMono-Variable.woff2) format("woff2"); font-weight: 100 900; }
+html, body { margin: 0; width: 1920px; height: 1080px; overflow: hidden; background: #ECEAE6; }
+svg { position: absolute; inset: 0; }
+text { font-family: GeistMono, monospace; }
+</style>
+<svg id="s" width="1920" height="1080" viewBox="0 0 1920 1080"></svg>
+<script src="../lib.js"></script>
+<script>
+window.ready = false;
+const NS = 'http://www.w3.org/2000/svg';
+const S = document.getElementById('s');
+const el = (tag, attrs, parent) => { const e = document.createElementNS(NS, tag); for (const k in attrs) e.setAttribute(k, attrs[k]); (parent || S).appendChild(e); return e; };
+
+// The 12 stations sit on a loop. The shape travels station to station; the final shot pulls out to reveal the route.
+const N = 12;
+const pos = i => { const a = (i / N) * Math.PI * 2 - Math.PI / 2; return [960 + 700 * Math.cos(a), 560 + 330 * Math.sin(a)]; };
+const STATES = [
+  ['button', 220, 64], ['loader', 64, 64], ['check', 64, 64], ['island', 260, 52], ['player', 300, 150], ['progress', 300, 40],
+  ['volume', 280, 40], ['toggle', 104, 56], ['tabs', 300, 56], ['chart', 300, 170], ['⌘K', 320, 64], ['toast', 280, 60],
+];
+
+window.render = function (t) {
+  S.innerHTML = '';
+  const reveal = smooth(0, 1.5, t);
+  const cam = el('g', { transform: `translate(960 540) scale(${lerp(1.6, 0.9, easeInOut(reveal))}) translate(-960 -540)` });
+
+  // route
+  let d = '';
+  for (let k = 0; k <= 240; k++) { const [x, y] = pos((k / 240) * N); d += (k ? 'L' : 'M') + x.toFixed(1) + ' ' + y.toFixed(1); }
+  el('path', { d, fill: 'none', stroke: '#0A0A0A', 'stroke-opacity': 0.14, 'stroke-width': 2, 'stroke-dasharray': '6 10' }, cam);
+  // travelled part, solid
+  const at = 8.55;                                 // shape is between toggle and tabs
+  let dt = '';
+  for (let k = 0; k <= 200; k++) { const [x, y] = pos((k / 200) * at); dt += (k ? 'L' : 'M') + x.toFixed(1) + ' ' + y.toFixed(1); }
+  el('path', { d: dt, fill: 'none', stroke: '#0A0A0A', 'stroke-width': 3, 'stroke-linecap': 'round' }, cam);
+
+  // stations: visited = filled ghosts, upcoming = outlines
+  STATES.forEach(([name, w, h], i) => {
+    const [x, y] = pos(i); w *= 0.62; h *= 0.62;
+    const visited = i <= 8;
+    el('rect', { x: x - w / 2, y: y - h / 2, width: w, height: h, rx: Math.min(h / 2, 26),
+      fill: visited ? '#0A0A0A' : 'none', 'fill-opacity': visited ? 0.1 : 0, stroke: '#0A0A0A', 'stroke-opacity': visited ? 0.25 : 0.35, 'stroke-width': 2,
+      'stroke-dasharray': visited ? 'none' : '5 7' }, cam);
+    el('text', { x, y: y + h / 2 + 34, 'text-anchor': 'middle', 'font-size': 20, fill: '#0A0A0A', 'fill-opacity': 0.55 }, cam).textContent =
+      String(i + 1).padStart(2, '0') + '  ' + name;
+  });
+
+  // the shape itself, mid-morph from toggle to tabs (stretching along the direction of travel)
+  const [sx, sy] = pos(at);
+  const g = el('g', { transform: `translate(${sx} ${sy}) rotate(-8) scale(0.85)` }, cam);
+  el('rect', { x: -150, y: -30, width: 300, height: 60, rx: 30, fill: '#0A0A0A' }, g);
+  el('rect', { x: -144, y: -24, width: 120, height: 48, rx: 24, fill: '#fff' }, g);
+  ['Day', 'Week', 'Month'].forEach((s, i) => el('text', { x: -84 + i * 96, y: 7, 'text-anchor': 'middle', 'font-size': 19, 'font-family': 'Geist', 'font-weight': 600, fill: i ? '#fff' : '#0A0A0A' }, g).textContent = s);
+
+  // corner meta
+  el('text', { x: 80, y: 96, 'font-size': 26, fill: '#0A0A0A' }).textContent = 'ONE SHAPE · ONE TAKE';
+  el('text', { x: 1840, y: 96, 'font-size': 26, fill: '#0A0A0A', 'text-anchor': 'end' }).textContent = '00:17.1 / 00:24.0';
+};
+document.fonts.ready.then(() => { window.render(0); window.ready = true; });
+</script>
