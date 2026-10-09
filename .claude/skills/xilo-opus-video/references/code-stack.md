@@ -20,9 +20,9 @@
 ## 默认选择
 
 - 用户没点名：**单个 HTML 文件 + render(t)**，内容用 Canvas 或 HTML/CSS/SVG，需要质感再加一层 WebGL。
-- 用户有产品代码库、要多场景长片、或者点名 React：Remotion。每个场景一个组件，动画全部用当前帧号算。
-- 用户点名 HyperFrames：先安装它的 skill（`npx skills add heygen-com/hyperframes`），按它的规范写。
-- 数学、物理、算法讲解：Manim，渲染不走浏览器，用 Manim 自己的命令出视频，再用 FFmpeg 混声音。
+- 用户有产品代码库、要多场景长片、或者点名 React：Remotion。每个场景一个组件，动画全部用当前帧号算。写代码前读同目录已装的 `remotion-best-practices` skill（官方规范，路由到 create / markup / render 等子文档）。
+- 用户点名 HyperFrames：本项目已装 `hyperframes-core`（合成规范，写 HTML 前必读）、`hyperframes-animation`（动效规则和场景蓝图）、`hyperframes-keyframes`（镜头推拉、关键帧）、`hyperframes-cli`（预览、校验、渲染），按它们的规范写。
+- 数学、物理、算法讲解：Manim，渲染不走浏览器，用 Manim 自己的命令出视频，再用 FFmpeg 混声音。写代码前读同目录已装的 `manim-skill`（含 TTS 配音和字幕同步工具）。
 
 ## 风格 → 组合速查
 
