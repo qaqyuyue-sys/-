@@ -1,0 +1,4 @@
+file: out/changqing-ui-morph.mp4
+duration: 16.00s  size: 1920x1080  fps: 60.00  audio: yes
+contact sheet: qa/final-phone-sheet.png (5x4, one cell every 0.80s)
+shot changes (0): none detected
