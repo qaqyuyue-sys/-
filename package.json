@@ -1,0 +1,23 @@
+{
+  "name": "xian-promo",
+  "version": "1.0.0",
+  "private": true,
+  "description": "西安城市宣传片（Remotion + MiniMax 配音）",
+  "scripts": {
+    "studio": "remotion studio",
+    "render": "remotion render XianPromo out/xian-promo-1080p.mp4",
+    "render:4k": "remotion render XianPromo out/xian-promo-4k.mp4 --scale=2",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@remotion/cli": "4.0.525",
+    "@remotion/transitions": "4.0.525",
+    "react": "19.1.1",
+    "react-dom": "19.1.1",
+    "remotion": "4.0.525"
+  },
+  "devDependencies": {
+    "@types/react": "19.1.12",
+    "typescript": "5.9.2"
+  }
+}

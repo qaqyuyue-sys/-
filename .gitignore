@@ -1,0 +1,8 @@
+node_modules/
+out/
+.env
+# 素材与生成的配音体积较大，默认不入库
+public/clips/*.mp4
+public/clips/*.mov
+public/audio/*.mp3
+public/audio/*.wav
