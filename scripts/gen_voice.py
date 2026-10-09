@@ -154,6 +154,9 @@ def main() -> None:
         print(f"[{i:02d}] 旁白 {audio_sec:.2f}s → 镜头 {dur:.2f}s（{'实拍' if has_clip else '插画'}）")
 
     out = {k: board[k] for k in ("fps", "width", "height", "transitionSec", "leadInSec", "bgm")}
+    if out["bgm"] and not (ROOT / "public" / out["bgm"]).exists():
+        print(f"提示：未找到 public/{out['bgm']}，本次不加背景音乐（运行 scripts/make_bgm.py 生成）")
+        out["bgm"] = None
     out["scenes"] = scenes
     SCENES_OUT.write_text(json.dumps(out, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     total = sum(s["durationSec"] for s in scenes) - board["transitionSec"] * (len(scenes) - 1)
