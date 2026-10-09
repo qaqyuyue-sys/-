@@ -3,7 +3,8 @@
 约 56 秒、11 个镜头的城市宣传片工程：航拍素材 + 毛玻璃信息卡片 + 逐字字幕 + 逐句配音，画面与旁白按音频实测时长自动对齐。
 
 - 画面：[Remotion](https://www.remotion.dev/)（React 写视频），镜头之间 0.5 秒交叉淡化，每个镜头缓慢推镜
-- 配音：MiniMax T2A（`speech-2.8-hd`），也可用免费的 Edge TTS
+- 配音：MiniMax T2A（`speech-2.8-hd`）；备选 Edge TTS（免费、在线）或离线中文 TTS（无需任何网络服务和 Key）
+- 素材：`fetch_footage.py` 用 Pexels / Pixabay 官方 API 按分镜搜索词自动下载，并记录来源
 - 字体：思源宋体 / 思源黑体（Noto Serif SC / Noto Sans SC）的子集，已放在 `public/fonts/`，渲染时**不需要访问 Google**
 
 ## 快速开始
@@ -15,13 +16,16 @@ npm install
 pip install requests            # 用 MiniMax 配音
 # pip install edge-tts          # 或者用免费的 Edge TTS
 
-# 1. 没有素材时先生成渐变占位视频（已有的真实素材不会被覆盖）
-./scripts/make_placeholders.sh
+# 1. 素材：自动下载（Key 免费申请），或手动按下方清单放入 public/clips/
+export PEXELS_API_KEY=你的Key          # 或 PIXABAY_API_KEY
+python3 scripts/fetch_footage.py
+#   素材没找齐时，先给缺的镜头生成渐变占位：./scripts/make_placeholders.sh
 
 # 2. 生成配音，同时写出 src/scenes.json（镜头时长由音频时长决定）
 export MINIMAX_API_KEY=你的Key
 python3 scripts/gen_voice.py --engine minimax
-#   没有 Key 想先看排版：python3 scripts/gen_voice.py --engine silent
+#   MiniMax 不可用时：./scripts/setup_local_tts.sh && python3 scripts/gen_voice.py --engine local
+#   只想先看排版：python3 scripts/gen_voice.py --engine silent
 
 # 3. 预览
 npm run studio
@@ -66,9 +70,26 @@ public/audio/               生成的配音 vo_01.mp3 … vo_11.mp3（可选 bgm
 - 自己录音或用其他工具配音：把文件按 `vo_01.mp3 …` 命名放进 `public/audio/`，然后运行 `python3 scripts/gen_voice.py --engine probe` 只重测时长。
 - Edge TTS：`--engine edge`，可用 `EDGE_VOICE`（默认 `zh-CN-YunxiNeural`）和 `EDGE_RATE`（默认 `-5%`）调整。
 
+### 离线兜底：`--engine local`
+
+MiniMax 和 Edge TTS 都连不上时使用，全程离线，依赖只来自 PyPI。
+
+```bash
+./scripts/setup_local_tts.sh                 # 只需一次：建 .venv-tts，并把模型转成 ONNX（约 1 分钟）
+python3 scripts/gen_voice.py --engine local  # 合成 11 句，自动响度归一到 -16 LUFS
+```
+
+- 模型是 [zhtts](https://pypi.org/project/zhtts/) 内置的 FastSpeech2 + MB-MelGAN，声音为标贝（Baker）女声。清晰度不错，但自然度明显不如 MiniMax，适合内部审片或应急。
+- **授权注意**：zhtts 代码是 MIT 协议，但标贝数据集只许非商业使用。对外商用发布请改用 MiniMax 等商用授权的配音。
+- 语速：`LOCAL_TTS_SPEED`（时长系数，默认 `1.05`，越大越慢）。
+- 多音字和“一”的变调由 `scripts/local_tts.py` 顶部的词典纠正，目前已处理 曲江(qū)、一支/一城(yì)、一份(yí)。改了文案后，可以用下面的命令先看注音，再把读错的词补进词典：
+  ```bash
+  .venv-tts/bin/python -I -c "import sys,types;sys.modules['tensorflow']=types.ModuleType('t');import zhtts.tts as z;p=z.BakerProcessor(None,loaded_mapper_path=z.ASSET_DIR/'baker_mapper.json');print(p.text_to_phone('曲江池畔'))"
+  ```
+
 ## 素材清单
 
-把素材按下表命名放入 `public/clips/`。素材比镜头长 2–4 秒更稳妥（会从头开始播放）。
+`fetch_footage.py` 会按下表的搜索词自动挑选**横版、≥1920 宽、时长足够**的素材，下载到对应文件名，并把来源和作者写进 `public/clips/CREDITS.md`。对某个镜头不满意：`--list 5` 看第 5 镜的候选，`--only 5 --skip 1` 换成下一个候选。也可以手动按下表命名放入 `public/clips/`。素材比镜头长 2–4 秒更稳妥（会从头开始播放）。
 
 | 镜头 | 文件名 | 画面 | 搜索词 |
 |---|---|---|---|
@@ -101,6 +122,20 @@ public/audio/               生成的配音 vo_01.mp3 … vo_11.mp3（可选 bgm
 
 把纯音乐放到 `public/audio/bgm.mp3`，在 `scripts/storyboard.json` 中设置 `"bgm": "audio/bgm.mp3"`，再运行一次 `gen_voice.py`（`--engine probe` 即可）。旁白出现时音乐自动压到约 -20dB，空隙处回升，片头片尾自动淡入淡出。
 
+## 在 Claude Code 云端环境里运行
+
+云端环境默认只放行包管理器等少数域名。要让 MiniMax 配音和素材下载在云端跑通，需要在环境设置（会话标题栏的云环境菜单 → Edit → Network access）中把下列域名加入 Allowed domains（保持 “Allow package managers” 勾选）：
+
+| 用途 | 域名 |
+|---|---|
+| MiniMax 配音 | `api.minimaxi.com`、`api.minimaxi.chat`（国际站账号用 `api.minimax.io`） |
+| Pexels 素材 | `api.pexels.com`、`videos.pexels.com` |
+| Pixabay 素材 | `pixabay.com`、`cdn.pixabay.com` |
+
+API Key 请在同一设置页里以环境变量的形式添加：`MINIMAX_API_KEY`、`PEXELS_API_KEY`、`PIXABAY_API_KEY`。不要粘贴到聊天里。新会话才会读到新设置。
+
 ## 已验证
 
-在 Linux + Chromium 下完成过整片渲染（占位素材 + 静音/测试音配音）：成片 55.7 秒；用测试音检测，11 句旁白的起点与时间轴误差均在 0.06 秒以内（为 MP3 编码固有延迟）。MiniMax 接口本身未在此环境中调用（无 Key），首次使用请先 `--only 1` 试一句。
+- Linux + Chromium 下完成整片 1080p 渲染。用测试音检测，11 句旁白的起点与时间轴误差都在 0.06 秒以内（来自 MP3 编码固有延迟）。
+- 离线 TTS（`--engine local`）已生成全部 11 句，成片约 56.8 秒；逐句检查过注音。
+- MiniMax 接口和 Pexels/Pixabay 下载**没有实际调用过**：所在云环境的网络策略拦截了这些域名，也没有 Key。首次使用 MiniMax 时请先用 `--only 1` 试一句。

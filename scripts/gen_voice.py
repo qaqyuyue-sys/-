@@ -4,6 +4,7 @@
 用法：
   python3 scripts/gen_voice.py --engine minimax     # MiniMax T2A（需 MINIMAX_API_KEY）
   python3 scripts/gen_voice.py --engine edge        # Edge TTS（免费，需 pip install edge-tts）
+  python3 scripts/gen_voice.py --engine local       # 离线中文 TTS（先运行 scripts/setup_local_tts.sh）
   python3 scripts/gen_voice.py --engine silent      # 按字数生成静音占位，用于无 Key 时预览
   python3 scripts/gen_voice.py --engine probe       # 不合成，只重新测量现有音频时长
   python3 scripts/gen_voice.py --engine minimax --only 3 5   # 只重做第 3、5 句
@@ -75,6 +76,21 @@ def tts_edge(text: str, out: Path) -> None:
     asyncio.run(edge_tts.Communicate(text, voice, rate=rate).save(str(out)))
 
 
+def tts_local(text: str, out: Path) -> None:
+    py = ROOT / ".venv-tts" / "bin" / "python"
+    if not py.exists():
+        sys.exit("离线 TTS 未安装，请先运行 ./scripts/setup_local_tts.sh")
+    wav = out.with_suffix(".wav")
+    subprocess.run([str(py), "-I", str(ROOT / "scripts" / "local_tts.py"), str(wav), text], check=True)
+    # 统一响度到 -16 LUFS（短视频平台常用标准），并转成 mp3
+    subprocess.run(
+        ["ffmpeg", "-nostdin", "-loglevel", "error", "-y", "-i", str(wav),
+         "-af", "loudnorm=I=-16:TP=-1.5:LRA=11", "-ar", "44100", "-b:a", "192k", str(out)],
+        check=True,
+    )
+    wav.unlink()
+
+
 def tts_silent(text: str, out: Path) -> None:
     # 约 4.5 字/秒的正常播音语速，生成等长静音，方便没有 Key 时先排版预览
     sec = max(1.0, len(text) / 4.5)
@@ -93,7 +109,7 @@ def duration(path: Path) -> float:
     return float(res.stdout.strip())
 
 
-ENGINES = {"minimax": tts_minimax, "edge": tts_edge, "silent": tts_silent}
+ENGINES = {"minimax": tts_minimax, "edge": tts_edge, "local": tts_local, "silent": tts_silent}
 
 
 def main() -> None:

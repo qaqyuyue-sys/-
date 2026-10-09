@@ -13,7 +13,7 @@
       "text": "千年古都，西安。",
       "clip": "clips/01_dawn_aerial.mp4",
       "audio": "audio/vo_01.mp3",
-      "audioSec": 1.836,
+      "audioSec": 2.064,
       "durationSec": 5
     },
     {
@@ -23,8 +23,8 @@
       "text": "这里有三千余年的建城史，也有奔涌向前的现代力量。",
       "clip": "clips/02_city_panorama.mp4",
       "audio": "audio/vo_02.mp3",
-      "audioSec": 5.4,
-      "durationSec": 6.4
+      "audioSec": 4.937,
+      "durationSec": 5.937
     },
     {
       "id": 3,
@@ -33,8 +33,8 @@
       "text": "十三朝古都，城墙环抱，古今交织于一城。",
       "clip": "clips/03_city_wall.mp4",
       "audio": "audio/vo_03.mp3",
-      "audioSec": 4.284,
-      "durationSec": 5.284
+      "audioSec": 4.493,
+      "durationSec": 5.493
     },
     {
       "id": 4,
@@ -43,8 +43,8 @@
       "text": "大雁塔静立长安，晨钟暮鼓，穿越千年。",
       "clip": "clips/04_wild_goose.mp4",
       "audio": "audio/vo_04.mp3",
-      "audioSec": 4.068,
-      "durationSec": 5.068
+      "audioSec": 4.702,
+      "durationSec": 5.702
     },
     {
       "id": 5,
@@ -53,7 +53,7 @@
       "text": "一支沉睡两千余年的军阵，在泥土中等待归来。",
       "clip": "clips/05_terracotta.mp4",
       "audio": "audio/vo_05.mp3",
-      "audioSec": 4.716,
+      "audioSec": 4.676,
       "durationSec": 6
     },
     {
@@ -63,8 +63,8 @@
       "text": "骊山晨雾，温泉氤氲，盛唐的气韵仍在山间流转。",
       "clip": "clips/06_lishan_mist.mp4",
       "audio": "audio/vo_06.mp3",
-      "audioSec": 4.932,
-      "durationSec": 5.932
+      "audioSec": 5.486,
+      "durationSec": 6.486
     },
     {
       "id": 7,
@@ -73,8 +73,8 @@
       "text": "曲江池畔，园林水榭，四季皆是风景。",
       "clip": "clips/07_qujiang.mp4",
       "audio": "audio/vo_07.mp3",
-      "audioSec": 3.816,
-      "durationSec": 5
+      "audioSec": 4.075,
+      "durationSec": 5.075
     },
     {
       "id": 8,
@@ -83,8 +83,8 @@
       "text": "南依秦岭，北望渭河，山水为城添了一份厚重。",
       "clip": "clips/08_qinling_weihe.mp4",
       "audio": "audio/vo_08.mp3",
-      "audioSec": 4.716,
-      "durationSec": 6
+      "audioSec": 5.146,
+      "durationSec": 6.146
     },
     {
       "id": 9,
@@ -93,7 +93,7 @@
       "text": "科创之城，产业与人才在这里汇聚。",
       "clip": "clips/09_hitech_skyline.mp4",
       "audio": "audio/vo_09.mp3",
-      "audioSec": 3.6,
+      "audioSec": 3.553,
       "durationSec": 5
     },
     {
@@ -103,7 +103,7 @@
       "text": "夜幕降临，钟楼与灯火相映，古城再度醒来。",
       "clip": "clips/10_bell_tower_night.mp4",
       "audio": "audio/vo_10.mp3",
-      "audioSec": 4.5,
+      "audioSec": 4.859,
       "durationSec": 6
     },
     {
@@ -113,7 +113,7 @@
       "text": "这里是西安，欢迎回家。",
       "clip": "clips/11_night_pullback.mp4",
       "audio": "audio/vo_11.mp3",
-      "audioSec": 2.484,
+      "audioSec": 2.586,
       "durationSec": 5
     }
   ]
