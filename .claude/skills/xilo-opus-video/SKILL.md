@@ -56,7 +56,7 @@ opus-video/<slug>/
 
 ## 第 2 步：给三个方案
 
-读 [references/code-stack.md](references/code-stack.md) 选技术组合，按 [references/plan-format.md](references/plan-format.md) 的格式写三个方案。
+读 [references/code-stack.md](references/code-stack.md) 选技术组合，按 [references/plan-format.md](references/plan-format.md) 的格式写三个方案。想参考别人验证过的写法，看 [references/viral-prompts.md](references/viral-prompts.md)（收藏榜前十的提示词和规律）。
 
 三个方案要有明显差别，差别在风格、叙事结构或技术组合上，不能只是换个配色。常见的拉开方式：一个稳妥（最贴近原材料和参考），一个风格化（换一种画面语言），一个结构上大胆（换一种讲法，比如用一个贯穿全片的主角或者一个不切镜头的长镜头）。
 
