@@ -59,9 +59,9 @@ svg { display: block; overflow: visible; }
         <line id="guide" stroke="#fff" stroke-opacity="0.25" stroke-width="1.5" stroke-dasharray="4 5"/>
         <circle id="dot" r="7" fill="#fff"/>
       </svg>
-      <div class="abs" id="tip" style="width:120px;height:56px;border-radius:12px;background:#fff;color:#0A0A0A;transform-origin:50% 100%">
-        <div class="abs" style="left:14px;top:9px;font-size:14px;color:#8A8A8A">August</div>
-        <div class="abs" style="left:14px;top:26px;font-size:20px;font-weight:600">$5.1k</div>
+      <div class="abs" id="tip" style="width:150px;height:72px;border-radius:12px;background:#fff;color:#0A0A0A;transform-origin:50% 100%">
+        <div class="abs" style="left:16px;top:10px;font-size:18px;color:#8A8A8A">August</div>
+        <div class="abs" style="left:16px;top:32px;font-size:26px;font-weight:600">$5.1k</div>
       </div>
     </div>
     <!-- 10 command palette -->
@@ -160,15 +160,15 @@ const HOVER = 7;
 // ---------- drags: value computed from the cursor while held ----------
 const pDrag = t => lerp(0.22, 0.74, easeInOut(clamp((t - 5.05) / 0.8)));         // progress knob
 const progKnob = p => [-260 + 28 + p * 464, -116 + 176];                            // shape-local
-const volX = t => lerp(-58, 340, easeInOut(clamp((t - 6.55) / 0.75)));             // cursor x on volume
+const volX = t => lerp(-58, 400, easeInOut(clamp((t - 6.55) / 0.75)));             // cursor x on volume
 function volume(t) {
   const held = t >= 6.5 && t < 7.45;
   const cx = held ? volX(t) : volX(7.45);
   const end = cx + 220 + 22;                                                         // fill end (shape-left)
   const v = t < 6.5 ? 0.35 : clamp((end - 50) / 384);
   const over = Math.max(0, end - 434);
-  let stretch = 70 * (1 - Math.exp(-over / 90));
-  if (t >= 7.45) { const s0 = 70 * (1 - Math.exp(-Math.max(0, volX(7.45) + 242 - 434) / 90)); stretch = s0 * (1 - spring(t - 7.45, 18, 0.7)); }
+  let stretch = 120 * (1 - Math.exp(-over / 110));
+  if (t >= 7.45) { const s0 = 120 * (1 - Math.exp(-Math.max(0, volX(7.45) + 242 - 434) / 110)); stretch = s0 * (1 - spring(t - 7.45, 18, 0.7)); }
   return { v, stretch, cx };
 }
 
@@ -286,7 +286,7 @@ window.render = function (t) {
     $('dot').setAttribute('cx', px); $('dot').setAttribute('cy', py); $('dot').setAttribute('r', 7 * hv);
     $('guide').setAttribute('x1', px); $('guide').setAttribute('x2', px); $('guide').setAttribute('y1', py); $('guide').setAttribute('y2', 320);
     $('guide').setAttribute('stroke-opacity', 0.25 * hv);
-    const tip = $('tip').style; tip.left = px - 60 + 'px'; tip.top = py - 76 + 'px';
+    const tip = $('tip').style; tip.left = px - 75 + 'px'; tip.top = py - 92 + 'px';
     tip.opacity = clamp(hv * 1.5); tip.transform = `scale(${0.85 + 0.15 * hv})`;
   }
   // 10 command palette (anchored to the top so the input row stays put while the result row grows in)
