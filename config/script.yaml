@@ -1,0 +1,97 @@
+# 杨凌城市宣传片 ——《杨凌 · 希望的田野》
+# 时长目标：约 60 秒，1920x1080 / 30fps
+#
+# 结构说明
+#   lines:  每一条是一句配音 + 一张同步出现的文字卡片。
+#           每句单独调用 MiniMax 合成，按真实音频时长排时间轴，
+#           因此卡片出现/消失与配音逐句严格对齐。
+#   shots:  该句配音期间播放的镜头（按顺序平分该句时长）。
+#           镜头 id 对应 footage/<id>.mp4，见 docs/分镜脚本.md。
+#   card:   tag = 卡片上方的小标签；text 默认等于配音文本（保证音画字一致）。
+#           style: title（片头/片尾大标题卡） | line（标准字幕卡片）
+
+video:
+  width: 1920
+  height: 1080
+  fps: 30
+  transition: 0.5        # 镜头之间交叉溶解时长（秒）
+  lead_in: 0.35          # 每句配音在该段开始后多久进入
+  tail: 0.55             # 每句配音结束后留白
+  grade: "eq=contrast=1.06:saturation=1.12:gamma=0.98,unsharp=5:5:0.4"
+
+tts:
+  provider: minimax
+  model: speech-02-hd
+  voice_id: presenter_male        # 男性主持人音色；可换 Chinese (Mandarin)_Male_Announcer 等
+  speed: 0.95
+  vol: 1.0
+  pitch: 0
+  emotion: calm
+  sample_rate: 32000
+  bitrate: 128000
+
+music:
+  file: assets/bgm.mp3     # 可选；不存在则只有配音
+  volume: 0.32
+  duck: true               # 配音出现时自动压低音乐
+
+opening:                   # 片头无配音大标题（航拍晨曦）
+  duration: 4.0
+  shots: [A01_dawn_aerial]
+  card: {style: title, title: "杨 凌", subtitle: "YANGLING · 中国农科城"}
+
+lines:
+  - id: L01
+    voice: "四千多年前，后稷在这里教民稼穑。"
+    card: {tag: "农耕之源"}
+    shots: [A02_wheat_aerial_sunrise, G01_wheat_ears_macro]
+
+  - id: L02
+    voice: "中华农耕文明，从渭水之滨生根发芽。"
+    card: {tag: "渭水之滨"}
+    shots: [A03_weihe_river_aerial, G02_wetland_reeds]
+
+  - id: L03
+    voice: "今天的杨凌，是全国首个国家级农业高新区。"
+    card: {tag: "国家级示范区 · 1997"}
+    shots: [A04_city_skyline_aerial, A05_avenue_hyperlapse, G03_modern_building_lowangle]
+
+  - id: L04
+    voice: "近百年的农科学府，在这里育种、育苗、育人。"
+    card: {tag: "西北农林科技大学"}
+    shots: [A06_campus_aerial, G04_lab_seedlings]
+
+  - id: L05
+    voice: "智能温室里，科技让每一株作物精准生长。"
+    card: {tag: "智慧农业"}
+    shots: [G05_greenhouse_dolly, G06_hydroponics_closeup, A07_drone_spraying]
+
+  - id: L06
+    voice: "一粒良种从这里出发，走向千万亩田野。"
+    card: {tag: "种业高地"}
+    shots: [G07_seed_tray_macro, A08_patchwork_fields_topdown]
+
+  - id: L07
+    voice: "一年一度的农高会，让世界与田野在这里相遇。"
+    card: {tag: "农高会 · 始于1994"}
+    shots: [A09_expo_center_aerial, G08_flags_wind]
+
+  - id: L08
+    voice: "作为上合之城，杨凌把农业经验分享给更多国家。"
+    card: {tag: "上合之城"}
+    shots: [A10_sco_base_aerial, A11_orchard_rows_aerial]
+
+  - id: L09
+    voice: "背倚秦岭，面朝渭水，这是一座宜居的田园之城。"
+    card: {tag: "宜居杨凌"}
+    shots: [A12_qinling_mountains, G09_park_lake_reflection, A13_city_dusk_aerial]
+
+  - id: L10
+    voice: "杨凌，中国农科城，欢迎你。"
+    card: {tag: "YANGLING"}
+    shots: [A14_closing_pullback]
+
+ending:                    # 片尾无配音大标题，衔接最后一句
+  duration: 3.0
+  shots: [A14_closing_pullback]
+  card: {style: title, title: "杨凌", subtitle: "希望的田野 · 农业的未来"}

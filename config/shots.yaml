@@ -1,0 +1,173 @@
+# 镜头库：每个镜头 id 对应 footage/<id>.mp4
+#
+# kind:     aerial（航拍） | ground（地面机位） | macro（特写/微距） | timelapse（延时）
+# camera:   运镜要求，供实拍或挑选素材时参考
+# local:    true = 必须是杨凌实景（地标镜头），图库里找不到，
+#           需向杨凌示范区融媒体中心 / 官方宣传部门申请授权，或自行航拍；
+#           false = 通用农业/自然镜头，可用 Pexels / Pixabay 免版税素材替代
+# queries:  图库自动检索关键词（按顺序尝试）
+# start:    可选，素材入点（秒），跳过开头不稳的部分
+#
+# 全片挑选标准：≥1920x1080（优先 4K 下采样）、画面干净、无人物或人物极小、
+# 无水印/字幕/台标、光线统一（晨昏暖调为主）。
+
+A01_dawn_aerial:
+  kind: aerial
+  desc: 晨曦中的杨凌城区与田野全景，薄雾，太阳初升
+  camera: 高空缓慢前推，地平线居中偏上
+  local: true
+  queries: ["sunrise aerial farmland mist", "aerial city sunrise fog"]
+
+A02_wheat_aerial_sunrise:
+  kind: aerial
+  desc: 金色麦田航拍，逆光
+  camera: 低空贴麦浪平移
+  local: false
+  queries: ["wheat field aerial sunset", "golden wheat drone"]
+
+G01_wheat_ears_macro:
+  kind: macro
+  desc: 麦穗在风中摇曳，浅景深逆光
+  camera: 固定机位或缓慢横移
+  local: false
+  queries: ["wheat ears close up sunlight", "wheat macro wind"]
+
+A03_weihe_river_aerial:
+  kind: aerial
+  desc: 渭河蜿蜒穿过平原，河面反光
+  camera: 高空沿河道前推
+  local: true
+  queries: ["river aerial plain winding", "aerial river meander"]
+
+G02_wetland_reeds:
+  kind: ground
+  desc: 渭河湿地芦苇与水面
+  camera: 低机位缓慢横移
+  local: false
+  queries: ["reeds wetland sunrise", "wetland reeds water"]
+
+A04_city_skyline_aerial:
+  kind: aerial
+  desc: 杨凌城区天际线全景（示范区核心区）
+  camera: 环绕或缓慢横移
+  local: true
+  queries: ["aerial modern city china", "city skyline aerial green"]
+
+A05_avenue_hyperlapse:
+  kind: timelapse
+  desc: 城市主干道车流延时（如神农路、新桥路）
+  camera: 俯拍延时，车灯拖影
+  local: true
+  queries: ["city road aerial timelapse", "traffic avenue aerial"]
+
+G03_modern_building_lowangle:
+  kind: ground
+  desc: 示范区现代建筑仰拍，玻璃幕墙映蓝天
+  camera: 仰拍缓慢上摇
+  local: true
+  queries: ["modern building low angle glass sky", "glass building looking up"]
+
+A06_campus_aerial:
+  kind: aerial
+  desc: 西北农林科技大学校园（主楼/北校区）航拍
+  camera: 由远及近推向主楼
+  local: true
+  queries: ["university campus aerial", "campus building aerial"]
+
+G04_lab_seedlings:
+  kind: macro
+  desc: 实验室组培苗/试管苗特写，无人或只有手部
+  camera: 固定或滑轨微移
+  local: false
+  queries: ["plant tissue culture lab", "seedlings laboratory petri"]
+
+G05_greenhouse_dolly:
+  kind: ground
+  desc: 现代智能温室内部纵深，作物成排
+  camera: 沿过道匀速前推
+  local: false
+  queries: ["modern greenhouse interior", "greenhouse rows plants"]
+
+G06_hydroponics_closeup:
+  kind: macro
+  desc: 无土栽培/水培蔬菜特写，补光灯
+  camera: 缓慢横移
+  local: false
+  queries: ["hydroponic farm closeup", "vertical farming led"]
+
+A07_drone_spraying:
+  kind: aerial
+  desc: 植保无人机在农田上空作业
+  camera: 跟拍
+  local: false
+  queries: ["agricultural drone spraying field", "drone spraying crops"]
+
+G07_seed_tray_macro:
+  kind: macro
+  desc: 育苗盘中嫩芽破土
+  camera: 微距前推或延时
+  local: false
+  queries: ["seedling tray sprout", "seed germination timelapse"]
+
+A08_patchwork_fields_topdown:
+  kind: aerial
+  desc: 正俯拍规整的田块，色块分明
+  camera: 90° 顶拍缓慢平移
+  local: false
+  queries: ["top down aerial farmland patterns", "aerial fields geometric"]
+
+A09_expo_center_aerial:
+  kind: aerial
+  desc: 杨凌国际会展中心（农高会主场馆）外景，空场
+  camera: 环绕
+  local: true
+  queries: ["exhibition center aerial", "convention center aerial"]
+
+G08_flags_wind:
+  kind: ground
+  desc: 展馆前旗帜随风飘扬，蓝天
+  camera: 仰拍，长焦
+  local: false
+  queries: ["flags waving blue sky", "flag poles wind"]
+
+A10_sco_base_aerial:
+  kind: aerial
+  desc: 上合组织农业技术交流培训示范基地
+  camera: 前推
+  local: true
+  queries: ["aerial agricultural park", "aerial farm research station"]
+
+A11_orchard_rows_aerial:
+  kind: aerial
+  desc: 猕猴桃/苹果果园成行，航拍
+  camera: 沿果树行低空前推
+  local: false
+  queries: ["orchard rows aerial", "kiwi orchard aerial"]
+
+A12_qinling_mountains:
+  kind: aerial
+  desc: 秦岭山脉远景，云雾
+  camera: 长焦横移
+  local: false
+  queries: ["mountain range clouds aerial china", "misty mountains aerial"]
+
+G09_park_lake_reflection:
+  kind: ground
+  desc: 城市公园湖面倒影（如杨凌水运中心、邰城广场）
+  camera: 低机位固定
+  local: true
+  queries: ["park lake reflection city", "calm lake reflection trees"]
+
+A13_city_dusk_aerial:
+  kind: aerial
+  desc: 黄昏/蓝调时刻城市灯光初亮
+  camera: 缓慢拉升
+  local: true
+  queries: ["city dusk aerial lights", "blue hour city aerial"]
+
+A14_closing_pullback:
+  kind: aerial
+  desc: 由城市拉升至田野与城市全景，结尾镜头
+  camera: 高速拉升后放缓，≥8 秒连续
+  local: true
+  queries: ["aerial pull back city farmland", "drone rising landscape"]

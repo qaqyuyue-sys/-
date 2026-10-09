@@ -1,0 +1,9 @@
+footage/*
+!footage/.gitkeep
+build/
+build_test/
+output/
+assets/fonts/*.otf
+assets/bgm.*
+.env
+__pycache__/
