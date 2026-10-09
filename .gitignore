@@ -10,3 +10,4 @@ __pycache__/
 models
 aerial/assets/
 aerial/node_modules/
+*_预览.mp4
